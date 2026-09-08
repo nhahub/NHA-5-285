@@ -14,7 +14,11 @@ The tools people mention in the same breath as this project are not actually com
 2. **Managed multi-agent reviewers** — architecturally different, but the best design reference (Claude Code — Code Review).
 3. **Different categories entirely** — a process linter (Danger/DangerJS) and a workflow tool (Graphite) that attack the same underlying problem from other angles.
 
-Our scope is deliberately narrow: an **open-source GitHub Action**, **TypeScript/JavaScript only**, a **single free/low-cost model provider** behind a thin interface, **fix suggestions as comments only** (auto-remediation deferred to v2), and a **canonical, versioned finding model** as the single source of truth for output.
+Our scope is deliberately narrow: an **open-source GitHub Action with a local CLI over the same core** ([ADR-0006](../adr/0006-local-cli-core-action-as-adapter.md)), **TypeScript/JavaScript only**, a **single free/low-cost model provider** behind a thin interface, **fix suggestions as comments only** (auto-remediation deferred to v2), and a **canonical, versioned finding model** as the single source of truth for output.
+
+Note that the CLI is not a differentiator — Greptile, CodeRabbit and Claude Code all ship one. It is **table stakes we now meet**, adopted primarily because developing a review agent through a four-minute CI loop is untenable. The differentiators below are unchanged by it.
+
+**Sequencing caveat (2026-09-08).** GitHub integration is now deferred to **v3** ([SRS §2.3.3](./agentic-code-review-srs.md)), so v1 and v2 ship the CLI alone. Read the positioning below as describing the product at v3. Until then the project competes only where every tool in this document also offers a local mode — which is the weakest ground of the three differentiators, since the execution-backed claim thins on a machine where the developer can already run their own tests. This is a deliberate engineering sequence, not a repositioning; it does mean the competitive claim is not testable against real adopters until v3.
 
 ---
 
@@ -88,6 +92,6 @@ A workflow alternative that attacks the **same root problem we state** — the A
 | Verification | Deterministic (real test run) | Agentic / model-based | Agentic behavior check | None (rule-based) | Agentic (add-on) |
 | Openness | Fully open, forkable | Closed engine | Closed | Fully open | Closed |
 | Bias stance | Decoupled fresh-context agent | Varies | Fresh agents | N/A | Converging with writer (Cursor) |
-| Scope | TS/JS, GitHub Action | Multi-language, hosted | Multi-language, managed | Any lang, CI glue | GitHub-native workflow |
+| Scope | TS/JS, GitHub Action + local CLI | Multi-language, hosted | Multi-language, managed | Any lang, CI glue | GitHub-native workflow |
 
 *See [`tool-reference.md`](./tool-reference.md) for detailed, non-comparative descriptions and sourced pricing.*
