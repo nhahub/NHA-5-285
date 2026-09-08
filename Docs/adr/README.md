@@ -14,6 +14,7 @@ These records use the same plain-language style as [`agent-harness-design.md`](.
 | [0004](./0004-findings-emitted-as-tool-calls.md) | Findings are emitted as tool calls validated against a schema, not parsed out of prose | Proposed |
 | [0005](./0005-cross-run-memory-as-hidden-comment-ledger.md) | Memory that must survive between runs lives in a hidden ledger inside the summary comment | Proposed |
 | [0006](./0006-local-cli-core-action-as-adapter.md) | The reviewing core is a local CLI; the GitHub Action is an adapter over it | **Accepted** |
+| [0007](./0007-python-harness-typescript-target.md) | The harness is Python with LangGraph; the reviewed language is TypeScript | **Accepted** |
 
 ## How they relate
 
@@ -25,6 +26,7 @@ flowchart TD
     C["ADR-0003<br/>Untrusted code isolation<br/>+ fork triggers"]
     D["ADR-0004<br/>Findings as<br/>tool calls"]
     E["ADR-0005<br/>Cross-run memory in a<br/>hidden comment ledger"]
+    G["ADR-0007 ✅ Accepted<br/>Python harness, LangGraph in<br/>one step, TypeScript target"]
 
     A -->|"the pipeline owns execution,<br/>so it must decide when"| B
     A -->|"the pipeline checks out and runs<br/>PR code, so it owns the risk"| C
@@ -37,11 +39,17 @@ flowchart TD
     F ==>|"scopes to the Action —<br/>the CLI has a filesystem"| E
     F -.->|"unchanged, and reinforced:<br/>two renderers, one<br/>finding model"| D
 
+    G ==>|"amends the distribution<br/>consequence only: a PyPI package,<br/>not an npm one"| F
+    G -.->|"confines the agent framework<br/>to the one step where<br/>agency was already allowed"| A
+
     style F fill:#e8f7e8
+    style G fill:#e8f7e8
     style A fill:#e8eef7
 ```
 
-Solid arrows are parent/child: the child decision only makes sense because of the parent. Dashed arrows are constraints one decision places on another. **Thick arrows** are amendments — ADR-0006 changed the scope or tuning of four earlier records without reversing any of them.
+Solid arrows are parent/child: the child decision only makes sense because of the parent. Dashed arrows are constraints one decision places on another. **Thick arrows** are amendments — ADR-0006 changed the scope or tuning of four earlier records without reversing any of them, and ADR-0007 changes one consequence of ADR-0006.
+
+ADR-0007 is the only record that names an implementation technology. Everything above it was decided before the stack was chosen and survived the stack being chosen unaltered — which is the evidence that those decisions were taken at the right level.
 
 ### Version applicability
 
@@ -55,6 +63,7 @@ GitHub integration was deferred to **v3** on 2026-09-08, and v1 was baselined as
 | 0004 — findings as tool calls | **v1** — the one record with no version or surface caveat |
 | 0005 — cross-run memory ledger | **v3** — though its fingerprint design binds v1's local state file |
 | 0006 — CLI core, Action as adapter | **v1** — and it is what lets v3 be an addition rather than a rewrite |
+| 0007 — Python harness, TypeScript target | **v1** — it binds from the first line of code, because it decides which language that line is in |
 
 ### Reading order
 
@@ -69,4 +78,4 @@ ADR-0006 was decided last but changes how the others should be read, so read it 
 | **Superseded** | A later ADR replaced it; the record stays for history |
 | **Deprecated** | No longer relevant, but not replaced by anything |
 
-[ADR-0006](./0006-local-cli-core-action-as-adapter.md) is **Accepted**. The other five remain **Proposed** — not ratified, and three of them describe gaps in the current requirements rather than decisions the specification already made.
+[ADR-0006](./0006-local-cli-core-action-as-adapter.md) and [ADR-0007](./0007-python-harness-typescript-target.md) are **Accepted**. The other five remain **Proposed** — not ratified, and three of them describe gaps in the current requirements rather than decisions the specification already made.
