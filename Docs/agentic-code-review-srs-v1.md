@@ -50,7 +50,7 @@ flowchart LR
 - A local CLI reviewing a working tree, staged changes, or a branch range in a TS/JS repository
 - Syntax-tree parsing and related-context retrieval behind a depth-parameterised interface, with the parser-backed implementation serving depths 0 and 1
 - Execution of the project's tests and type-check, with a recorded evidence trail
-- A single-pass review agent, isolated from any code-writing agent, grounded in that evidence and in a pattern library
+- A review agent isolated from any code-writing agent, grounded in that evidence and in a pattern library — single-pass by default, with three read-only investigation tools available once a baseline has been measured (FR-5.7a, FR-5.7b)
 - A canonical finding model with a versioned schema, terminal rendering, and JSON output
 - A pattern library and a runnable regression harness reporting a catch rate
 - Configuration, credential handling, and diagnosable failure messages
@@ -169,7 +169,7 @@ The requirements in §4 are organised around nine function blocks. Each requirem
 | **CF-3** | Execution and evidence | Run the project's checks; record what happened |
 | **CF-4** | Context assembly | Fit diff, related context, evidence, and rules into the model window |
 | **CF-5** | Finding model and provider client | The canonical structure, its schema, and the model interface |
-| **CF-6** | The review agent | One grounded, isolated review pass |
+| **CF-6** | The review agent | A grounded, isolated review pass — single by default, with a corpus-gated route to a bounded loop |
 | **CF-7** | Output | Terminal rendering, JSON artifact, exit status |
 | **CF-8** | Pattern library and regression harness | Rules, rule attribution, and measurement |
 | **CF-9** | Configuration and diagnostics | Config, credentials, and legible failure |
@@ -303,12 +303,20 @@ It also absorbs the resolver sidecar entirely. The sidecar is `ParserContextProv
 
 - **FR-5.1 (Must)** The review agent shall operate in a context isolated from any code-writing agent — no shared history or state.
 - **FR-5.3 (Must)** The agent shall incorporate execution results (CF-3) and pattern-library rules (CF-8) into its findings.
-- **FR-5.7 (Must) (new in v1)** The agent shall complete a review in a single model pass. No tool loop shall run in v1; `emit_finding` is the only tool exposed.
+- **FR-5.7 (Must) (new in v1)** The review step's tool-call ceiling shall be a configuration value with a documented default of **zero** — a single model pass in which `emit_finding` is the only tool exposed.
+- **FR-5.7a (Should) (new in v1)** When the ceiling is above zero, the system shall expose exactly three read-only investigation tools: `read_file`, `get_outline`, and `search_repo`. No tool shall have side effects, and no tool shall trigger check execution (FR-4.6).
+- **FR-5.7b (Must) (new in v1)** The ceiling shall not be raised above its default until a single-pass baseline catch rate has been recorded on the regression corpus (FR-6.2d). Any subsequent ceiling shall be justified by a measured comparison against that baseline.
+- **FR-5.7c (Should) (new in v1)** When the ceiling is above zero, each model turn shall be told how many tool calls remain, and the review shall report whether it ended because the agent finished or because the ceiling was reached.
+- **FR-5.7d (Should) (new in v1)** Findings shall have the same structure and meaning at every ceiling value. A change of ceiling shall change how much is found, never what a finding is.
 - **FR-5.8 (Must) (new in v1)** The agent framework shall be confined to CF-6. No module outside CF-6 shall import it, and the pipeline steps outside CF-6 shall be callable as ordinary functions without it.
 
-*FR-5.7 is [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) at step ceiling zero — its documented fallback, adopted deliberately. Raising the ceiling in a later version is a configuration change, not a restructure.*
+*This is [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) with the ceiling pinned to its documented fallback, plus a stated route off it.*
 
 *FR-5.8 keeps ADR-0001 true now that a framework is in the repository. That record's decision was that **our code owns orchestration** and the model's agency lives in one step; adopting an agent framework is the most natural way to give that away by accident, one convenient node at a time. Confining it to CF-6 costs nothing — the fixed steps have no loops, no branching on model output, and nothing for a graph to orchestrate — and it keeps CF-1 through CF-5 and CF-7 unit-testable without a framework in the fixture. It is checkable by import list, which is why it joins AC-10 rather than needing an acceptance criterion of its own.*
+
+**Why zero is the default, and why raising it is a v1 activity rather than a v2 feature.** The three tools in FR-5.7a are read-only over data v1 already has — no security surface, no runner minutes, and a three-step ceiling costs roughly four model calls, which fits the latency budget in §2.4 at its upper end. Neither capability nor safety is the obstacle. **Sequencing is.** The single-pass run is the control arm for the only question that matters here — *does letting the model investigate improve catch rate enough to justify the extra turns?* — and that question cannot be answered without a no-loop baseline measured on the same corpus. FR-5.7b encodes that ordering as a requirement rather than an intention.
+
+Two tools that appear in earlier design notes are deliberately **not** in FR-5.7a: `get_check_result`, because distilled evidence is small and needed in every review, so preloading beats a turn spent fetching it; and `lookup_pattern_rule`, because v1 ships five rules (FR-6.3a) and preloading all five beats a lookup. Both become genuine tools at larger scale. `find_references` is excluded for a different reason — it is tool-shaped, but it requires the reverse index deferred to v2 (FR-2.3a, FR-2.3b).
 
 ### 4.7 CF-7 — Output
 
@@ -319,7 +327,7 @@ It also absorbs the resolver sidecar entirely. The sidecar is `ParserContextProv
 - **FR-10.4a (Must)** The system shall render findings to the terminal, derived from the finding model and not produced independently.
 - **FR-10.4b (Must)** The system shall provide machine-readable output on request, conforming to the schema in FR-8.2b.
 - **FR-10.4c (Should)** The system shall exit with a status code reflecting the review outcome, documented and stable across versions.
-- **FR-8.2c (Must) (new in v1)** The structured output shall record the achieved context depth, the model and schema versions used, and the resolved change scope, so a run can be reproduced and compared.
+- **FR-8.2c (Must) (new in v1)** The structured output shall record the achieved context depth, the tool-call ceiling in force and the number of tool calls actually made, the completion status (FR-5.7c), the model and schema versions used, and the resolved change scope — so a run can be reproduced and compared.
 
 *FR-8.2c is what makes the depth comparison in §6 possible after the fact rather than only in a controlled harness run.*
 
@@ -328,7 +336,8 @@ It also absorbs the resolver sidecar entirely. The sidecar is `ParserContextProv
 - **FR-6.1 (Must)** The system shall load a configurable pattern library of "wrong vs. correct" examples and project standards.
 - **FR-6.2a (Must)** When a finding is generated from a pattern-library rule, the finding shall reference the identifier of the matched rule.
 - **FR-6.2b (Must)** The system shall support a regression set of pattern examples with expected outcomes, runnable as a test, so pattern-matching behaviour can be verified and monitored across changes.
-- **FR-6.2d (Must) (new in v1)** The regression harness shall report a catch rate over the corpus, and shall accept a context depth so that results at different depths are directly comparable.
+- **FR-6.2d (Must) (new in v1)** The regression harness shall report a catch rate over the corpus, and shall accept both a context depth and a tool-call ceiling so that results at different settings are directly comparable.
+- **FR-6.2e (Should) (new in v1)** Regression runs shall pin the settings that affect reproducibility — depth, ceiling, model, and sampling parameters — and record them with the result, so that measurement runs stay comparable even where production runs vary.
 - **FR-6.3a (Must) (new in v1)** v1 shall ship at least five pattern rules, each with a wrong example, a correct example, and at least one corresponding regression case.
 
 *Five rules is a floor that proves the mechanism, not a product-grade rule set. Breadth is v2 (FR-6.3).*
@@ -390,6 +399,7 @@ v1 is complete when all of the following hold. Each is verifiable by execution, 
 | **AC-8** | Requesting depth 2 reports `achievedDepth: 1` with reason `no-index`, and completes the review | FR-2.6d |
 | **AC-9** | A malformed config fails with the offending field named; a missing provider key fails with a message saying so | FR-1.2d, FR-9.3 |
 | **AC-10** | No module outside CF-7 imports a terminal-rendering dependency, no module outside CF-1 resolves a change scope, and no module outside CF-6 imports the agent framework | FR-10.2, FR-2.6e, FR-5.8 |
+| **AC-11** | A single-pass baseline catch rate is recorded on the corpus before any ceiling above zero is enabled, and the harness can report catch rate and mean tool calls at two ceilings on that same corpus | FR-5.7b, FR-6.2d, FR-6.2e |
 | **AC-12** | With the resolver sidecar made unavailable, a review of the same repository still completes and reports `degraded: 'unresolvable-imports'`, distinguishably from a run where every import resolved | FR-2.6f, FR-2.6g, FR-11.2 |
 
 **AC-5 and AC-7 are the two to defend under schedule pressure.** Without measurement there is no way to know whether the reviewer improved. Without the skipped/errored distinction, "no findings" silently means both "clean" and "broken".
@@ -406,7 +416,8 @@ Full reasoning for each is in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) §4.
 |---|---|---|
 | Context depths 2 and above — importers, call sites, transitive | FR-2.3a, FR-2.3b | **v2** — a new implementation behind §4.2.2 |
 | Risk triage and depth routing | FR-3.1–FR-3.4 | **v2** — the depth parameter of §4.2.2 is what a tier will set |
-| Agent tool loop above a single pass | *(ADR-0001 step ceiling > 0)* | **v2** — a configuration change |
+| `find_references` and `get_definition` in the reverse direction | *(depends on FR-2.3a, FR-2.3b)* | **v2** — tool-shaped, but no index to back them |
+| `get_check_result`, `lookup_pattern_rule` as tools | — | **Not planned.** Preloaded instead; they fail the tool test at v1 scale and earn it only at larger rule counts |
 | Dependency audit | FR-4.3 | v2 |
 | Blocking vs. non-blocking distinction | FR-5.4 | v2 — severity carries this for now |
 | Cross-run de-duplication and local state | FR-5.5, FR-10.5 | v2 — weak locally; essential in v3 |
@@ -439,7 +450,8 @@ Deferred to a dedicated pass. Open items carried into it:
 | # | Risk | Severity | Response |
 |---|---|---|---|
 | **R-1** | **The thesis is unproven at v1.** At depth 1, defects depending on a caller's assumptions may go uncaught. | High | Stated in §2.5. The depth interface plus the regression harness turn it into a controlled experiment in v2: same corpus, depth 1 vs depth 2, one variable (AC-6). |
-| **R-2** | **A single pass may be too shallow.** | Medium | The ceiling is configuration (FR-5.7); raising it is a flip, not a rewrite. It also buys a real de-risking: v1 needs one reliable tool call, not fifteen. |
+| **R-2** | **A single pass may be too shallow.** | Medium | The ceiling is configuration (FR-5.7), and v1 contains the route off it: baseline first, then three read-only tools at a low ceiling, then a measured comparison (FR-5.7a–b, AC-11). Shipping at zero also buys real de-risking — v1 needs one reliable tool call, not fifteen. |
+| **R-2a** | **Raising the ceiling may not pay for itself.** More turns is a certain cost; better findings is a hypothesis. A loop can also re-read the same file and re-emit the same finding at several times the price. | Medium | This is precisely why FR-5.7b exists. The experiment is cheap and reversible: one config value, three read-only tools, and a corpus that can price the answer. Reverting to zero costs nothing. |
 | **R-3** | **The depth interface is designed against one implementation.** | Medium | Confined by FR-2.6e to a single consumer boundary; a wrong guess costs one module. |
 | **R-4** | **Prompt and context tuning has unbounded effort.** | High | The reason the CLI surface was chosen ([ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md)): iteration runs in seconds. AC-5 gives the work a stopping condition. |
 | **R-5** | **v1 does not address the stated problem.** It helps an author before they push, not a reviewer clearing a queue. | High | Structural, inherited from sequencing GitHub to v3. Stated in §1.1 and §2.2, and to be restated whenever v1 is demonstrated so it is not mistaken for the product. |
@@ -459,17 +471,21 @@ flowchart TD
     S2["2 · Evidence<br/>CF-3<br/>Run the checks, record them, put them in the prompt.<br/>The differentiator now exists."]
     S3["3 · Measurement<br/>CF-8<br/>Five rules and the regression harness.<br/>From here, every change is measurable."]
     S4["4 · Context quality<br/>CF-2, CF-4<br/>The depth interface, its depth-1 implementation,<br/>and the budget policy. Measure against step 3."]
+    S45["4.5 · The ceiling experiment<br/>FR-5.7a–b, AC-11<br/>Record the single-pass baseline. Then enable<br/>read_file, get_outline, search_repo at ceiling 3<br/>and measure again on the same corpus.<br/>Keep it if the turns are justified; revert if not."]
     S5["5 · Hardening<br/>CF-6 tuning, CF-9, FR-11.x<br/>Prompt iteration, config, diagnostics, budgets, docs."]
 
-    S1 --> S2 --> S3 --> S4 --> S5
+    S1 --> S2 --> S3 --> S4 --> S45 --> S5
 
     style S1 fill:#eef3fa
     style S3 fill:#e8f7e8
+    style S45 fill:#fff4e0
 ```
 
 Measurement is third, not last, on purpose: after step 3 every subsequent change can be evaluated instead of argued about, and step 4 can be assessed at depth 0 versus depth 1 on a fixed corpus.
 
 The stack falls in the same order. **Step 1 needs neither `tree-sitter` nor the resolver sidecar** — the walking skeleton is a CLI entry point, a schema, and one model call, and it should be standing before either is installed. `tree-sitter` arrives at step 4 with depth 0; the sidecar arrives immediately after it with depth 1, at which point AC-12's degraded path becomes measurable — depth 1 with and without the resolver is a second comparison the corpus can price, on the same axis as depth 0 versus depth 1.
+
+Step 4.5 exists for the same reason and is the one step that may end in a revert. It is deliberately placed **after** the baseline it needs and **before** prompt tuning, so that tuning happens against whichever ceiling the measurement selected rather than being redone afterwards.
 
 ## Appendix B — Traceability
 
@@ -482,9 +498,9 @@ The stack falls in the same order. **Step 1 needs neither `tree-sitter` nor the 
 | FR-2.3c, FR-2.5, FR-2.5a–c | CF-4 | AC-1, AC-3 |
 | FR-3.5 | CF-9 | AC-1 |
 | FR-4.1, FR-4.2, FR-4.4a–b, FR-4.5a–c, FR-4.6, FR-4.7 | CF-3 | AC-1, AC-2, AC-7 |
-| FR-5.1, FR-5.3, FR-5.7, FR-5.8 | CF-6 | AC-2, AC-10 |
+| FR-5.1, FR-5.3, FR-5.7, FR-5.7a–d, FR-5.8 | CF-6 | AC-2, AC-10, AC-11 |
 | FR-5.2, FR-5.6, FR-5.6a–b | CF-5 | AC-3 |
-| FR-6.1, FR-6.2a, FR-6.2b, FR-6.2d, FR-6.3a | CF-8 | AC-4, AC-5, AC-6 |
+| FR-6.1, FR-6.2a, FR-6.2b, FR-6.2d, FR-6.2e, FR-6.3a | CF-8 | AC-4, AC-5, AC-6, AC-11 |
 | FR-7.2 | — | Satisfied by absence of a write path |
 | FR-8.1b, FR-8.2a–c, FR-8.4, FR-10.4a–c | CF-7 | AC-1, AC-3 |
 | FR-9.1, FR-9.3 | CF-9 | AC-9 |

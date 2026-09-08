@@ -306,6 +306,16 @@ Both are contract decisions. Making them now costs a schema line each; making th
 
 **Defer everything else to the point where the ceiling first rises above zero** — which should itself be gated on the regression corpus existing, so that the first measurement anyone takes of the loop is a comparison against the single-pass baseline on the same defects.
 
+### Amendment (2026-09-08) — that point falls inside v1
+
+The paragraph above says "defer to v2", and that was the wrong unit. **The gate is the corpus, not a version number**, and the corpus lands at build step 3 of v1.
+
+Three of the tools in this project's own tool surface — `read_file`, `get_outline`, `search_repo` — are read-only over data v1 already holds. No security surface, no runner minutes, and a three-step ceiling costs about four model calls, which fits the CLI latency budget at its upper end. Neither capability nor safety blocks them. The only thing that does is the need for a control arm.
+
+So the baseline now carries a route off zero: **FR-5.7** makes the ceiling configuration defaulting to zero, **FR-5.7a** names the three tools, **FR-5.7b** forbids raising the ceiling before a single-pass baseline exists on the corpus, and **AC-11** verifies it. It appears in the delivery sequence as step 4.5 — after the baseline, before prompt tuning, and explicitly allowed to end in a revert.
+
+This strengthens rather than weakens §1's correction. The review argued the architecture was insufficiently agentic; the accurate statement is that the architecture was always Option C, and the *schedule* was more conservative than the evidence required. Two further corrections fell out of re-applying the tool test at v1's actual scale: `get_check_result` and `lookup_pattern_rule` should not be tools at all — distilled evidence is ~2 KB and needed every time, and five rules preload more cheaply than they look up. Both earn tool status at larger scale, neither does now.
+
 ---
 
 ## 12. The one-line summary

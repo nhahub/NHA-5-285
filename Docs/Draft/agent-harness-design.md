@@ -127,18 +127,28 @@ A tool is a function we expose to the model. The model never executes anything; 
 
 **The test for whether something should be a tool:** would the model's judgement about *when* to call it beat a fixed rule? If a fixed rule is just as good, do it in the pipeline and hand over the result.
 
-| Tool | What it does | Runtime cost |
-|---|---|---|
-| `read_file(path, range)` | Returns source lines | Free |
-| `get_outline(path)` | Lists the functions and classes in a file, without bodies | Free |
-| `get_definition(symbol)` | Returns where a symbol is defined | Free |
-| `find_references(symbol)` | Returns places that import or call it | Free |
-| `search_repo(pattern)` | Plain text search — the escape hatch when syntax-tree analysis misses something, such as a dynamically built import path | Free |
-| `get_check_result(check)` | Returns the recorded outcome of the tests, type check, or audit from step 6 | Free |
-| `lookup_pattern_rule(id)` | Returns one project coding rule with its wrong/correct example | Free |
-| `emit_finding({...})` | Records one review finding | Free |
+### What a tool call actually costs
 
-All of these read from data we already have on disk or in memory. That's deliberate — every tool call is cheap, so a capped loop has a predictable cost.
+> **Correction to an earlier version of this table**, which listed every tool's cost as "free". That was misleading and worth stating plainly, because it invites the conclusion that there is no reason not to expose everything.
+>
+> A tool call has **no side effects and consumes no runner minutes** — that much was right. But **every tool call costs a full model turn**, and each turn resends the conversation so far. The turn is the dominant cost of the entire system. Three tool calls is four model calls, not one call plus three cheap lookups.
+>
+> So the correct reading is: tools are cheap in *risk*, expensive in *turns*. The test above is the one that matters, and it has to be applied at the scale the system actually runs at — see the verdicts below.
+
+| Tool | What it does | Side effects | Verdict at v1 scale |
+|---|---|---|---|
+| `read_file(path, range)` | Returns source lines | None | ✅ **Tool.** No fixed rule can know which neighbour matters |
+| `get_outline(path)` | Lists the functions and classes in a file, without bodies | None | ✅ **Tool.** Cheap orientation before spending a turn on a full read |
+| `search_repo(pattern)` | Plain text search — the escape hatch when syntax-tree analysis misses something, such as a dynamically built import path | None | ✅ **Tool.** Unpredictable by definition |
+| `find_references(symbol)` | Returns places that import or call it | None | ⛔ **Not yet.** Tool-shaped, but it needs the reverse index (FR-2.3a, FR-2.3b) which does not exist until v2 |
+| `get_definition(symbol)` | Returns where a symbol is defined | None | ⚠️ **Mostly subsumed.** Depth-1 forward imports are already resolved by the context provider; its distinct value is the reverse direction, which arrives with `find_references` |
+| `get_check_result(check)` | Returns the recorded outcome of the tests or type check | None | ❌ **Preload instead.** After distillation the evidence is ~2 KB and is relevant in *every* review. Spending a turn to fetch something always needed and always small is pure overhead |
+| `lookup_pattern_rule(id)` | Returns one project coding rule with its wrong/correct example | None | ❌ **Preload instead.** v1 ships five rules (FR-6.3a); preload all five. This becomes a real tool at roughly fifty rules, not at five |
+| `emit_finding({...})` | Records one review finding | Records state | ✅ **Always a tool.** Not an information tool — it is the output boundary, §3 |
+
+**The verdict column is scale-dependent, and that is the point.** The eight-tool table describes a mature system. Applied at v1's actual scale — five rules, no reverse index, distilled evidence that always fits — it collapses to **three investigation tools plus the output boundary**. A tool that a fixed rule can serve just as well is not a capability; it is a turn tax with extra failure modes.
+
+Re-run this table whenever the scale changes. At fifty rules, `lookup_pattern_rule` earns its place. When the reverse index lands, so does `find_references`.
 
 ### Two things that are deliberately not tools
 
