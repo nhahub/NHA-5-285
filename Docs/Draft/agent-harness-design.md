@@ -14,7 +14,7 @@ Companion to [`agentic-code-review-srs.md`](./agentic-code-review-srs.md). Every
 
 | Term | Meaning in this document |
 |---|---|
-| **Harness** | The ordinary program code that surrounds the AI model — it prepares input, decides what the model is allowed to do, checks the model's output, and publishes results. It is not AI. It is TypeScript we write. |
+| **Harness** | The ordinary program code that surrounds the AI model — it prepares input, decides what the model is allowed to do, checks the model's output, and publishes results. It is not AI. It is **Python we write** ([ADR-0007](../adr/0007-python-harness-typescript-target.md)); TypeScript is the language it *reads*, not the language it is written in. |
 | **The pipeline** | The fixed sequence of steps the harness runs on every pull request, start to finish. Defined below in §1. |
 | **Model / LLM** | The AI language model we call over the network. |
 | **Context window** | The single block of text we send to the model. It has a hard size limit. Everything the model knows about the pull request must fit inside it. |
@@ -478,9 +478,13 @@ Two rules attach to this diagram:
 
 **No embeddings, no vector database, in v1.** The syntax-tree analysis the SRS already requires — finding files that import a changed symbol and the call sites of a changed function (FR-2.3a, FR-2.3b) — answers "what does this change affect" more precisely, more cheaply, and reproducibly. Semantic search adds cost and non-determinism for no gain at this scope.
 
+This is worth restating now that the harness is built on LangChain ([ADR-0007](../adr/0007-python-harness-typescript-target.md)), because that framework makes retrieval-augmented generation the path of least resistance — a vector store is four lines away, and the shape of every tutorial suggests reaching for one. The reason not to has not changed: we are not searching for *semantically similar* code, we are following *actual* edges in the import graph, and an approximate answer to a question with an exact answer is a downgrade.
+
 ### A portability caveat
 
 The SRS promises that adding a provider is a matter of mapping its output to the canonical finding format, with no downstream changes (FR-0.3). That holds for output *shape*. It does not hold for *capability*: a provider without tool calling needs an entirely different code path. The model interface should therefore abstract four things — chat completion, tool calling, structured output, and token counting — and declare an explicit fallback for when tool calling is unavailable.
+
+LangChain supplies three of those four directly — tool binding and structured output are the two mechanisms FR-5.6a and FR-5.6b were written against, and pointing an OpenAI-compatible client at a different base URL is most of what FR-0.3 asks for. It does **not** supply the capability question. A model that *accepts* a tool binding is not a model that *reliably calls it*, and the abstraction will happily hide that difference behind a uniform interface. The three criteria above still have to be tested against the actual chosen model before the provider is committed to; a framework that makes providers interchangeable in code does not make them interchangeable in behaviour.
 
 ---
 

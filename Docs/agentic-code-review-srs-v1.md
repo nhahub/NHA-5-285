@@ -71,11 +71,13 @@ flowchart LR
 | **Finding model** | The single canonical typed structure for findings (FR-0), from which all outputs are derived. |
 | **Pattern rule** | A "wrong vs. correct" example with an identifier, applied by the agent when producing findings. |
 | **Regression harness** | A runnable test over a curated corpus of known defects, reporting how many the reviewer caught. |
+| **Host language** | The language the system itself is written in — Python ([ADR-0007](./adr/0007-python-harness-typescript-target.md)). Distinct from the **target language**, TypeScript/JavaScript, which is the language of the code being reviewed. |
+| **Resolver sidecar** | A bundled helper process, in the target language's own toolchain, that answers "which file does this import specifier refer to?". Private to CF-2 (FR-2.6f). |
 | **Must / Should** | **Must** = required for v1 to be complete. **Should** = required if time allows; its absence does not block release. |
 
 ### 1.4 References
 
-- Architecture decisions: [`adr/`](./adr/) — particularly [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) (pipeline and step ceiling), [ADR-0004](./adr/0004-findings-emitted-as-tool-calls.md) (findings as tool calls), [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md) (CLI core, Action as adapter)
+- Architecture decisions: [`adr/`](./adr/) — particularly [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) (pipeline and step ceiling), [ADR-0004](./adr/0004-findings-emitted-as-tool-calls.md) (findings as tool calls), [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md) (CLI core, Action as adapter), [ADR-0007](./adr/0007-python-harness-typescript-target.md) (Python harness, TypeScript target)
 - Scope derivation: [`Draft/mvp-scope.md`](./Draft/mvp-scope.md)
 - Full catalogue: [`Draft/agentic-code-review-srs.md`](./Draft/agentic-code-review-srs.md)
 - Non-functional requirements: deferred to a dedicated pass (§8)
@@ -110,6 +112,8 @@ flowchart TD
 
 Step 6 is the only step involving a model. In v1 it is a **single pass** — the step ceiling is zero (FR-5.7).
 
+The pipeline is plain Python. The agent framework is confined to step 6 (FR-5.8), which is the step where a loop is one day permitted and the only step where a framework has anything to orchestrate. That confinement is what makes FR-5.7's promise — that raising the ceiling is configuration rather than restructuring — true by construction: at ceiling zero the review step is a graph with one node, and above zero it is the same graph with an edge back to it. See [ADR-0007](./adr/0007-python-harness-typescript-target.md).
+
 ### 2.2 Users
 
 | User | Need v1 serves |
@@ -122,11 +126,18 @@ Note that v1's primary user is the **author**, not the reviewer named as the pri
 
 ### 2.3 Operating Environment
 
-- **Platform:** a developer workstation — Linux, macOS, or Windows
-- **Runtime:** Node.js, with `tree-sitter` as a native module
-- **Repository under review:** a TypeScript/JavaScript project with a runnable test script, under git
-- **External dependency:** one AI model provider reachable over HTTPS (NVIDIA NIM free tier as the default)
-- **Credentials:** a provider API key supplied through the environment or user-level configuration
+The system is written in a different language from the code it reviews. That split is decided in [ADR-0007](./adr/0007-python-harness-typescript-target.md) and it is the reason this section distinguishes three environments that earlier drafts treated as one.
+
+| | |
+|---|---|
+| **Platform** | A developer workstation — Linux, macOS, or Windows |
+| **Host runtime** | Python, with `tree-sitter` bindings as a native extension (FR-2.2) |
+| **Agent libraries** | LangChain for the provider interface, tool binding, and structured output; LangGraph for the review step only (FR-5.8) |
+| **Resolver sidecar** | A bundled Node.js script over the TypeScript compiler API, used for depth-1 module resolution (FR-2.6f). Node is a **runtime prerequisite for authoritative depth 1, never for installation** — its absence degrades and reports (FR-2.6g) |
+| **Repository under review** | A TypeScript/JavaScript project with a runnable test script, under git. Its checks run through **its own** toolchain, in a separate process (FR-4.7) |
+| **Distribution** | A PyPI package with a console entry point, installed with `uv tool install` or `pipx`. The bundled resolver ships as package data |
+| **External dependency** | One AI model provider reachable over HTTPS (NVIDIA NIM free tier as the default), accessed through an OpenAI-compatible client so that FR-0.3 reduces to a base URL and a model name |
+| **Credentials** | A provider API key supplied through the environment or user-level configuration |
 
 ### 2.4 Assumptions and Constraints
 
@@ -134,6 +145,9 @@ Note that v1's primary user is the **author**, not the reviewer named as the pri
 - **Binding constraint is latency, not runner minutes.** A developer waiting at a prompt abandons the tool after roughly 10–30 seconds. Cost is borne per invocation and is visible to the user.
 - **Value depends on a runnable test suite.** Execution-backed review adds nothing to a repository whose tests cannot run; the system must say so rather than degrade silently (FR-9.3).
 - **The provider must support tool calling for at least one call per review.** v1 requires exactly one reliable `emit_finding` call, not a multi-step loop — this is the documented fallback configuration in [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) and materially reduces the free-tier dependency risk.
+- **The system and the repository under review share no runtime.** Checks are executed through the project's own toolchain as subprocesses (FR-4.7); the system never imports the project's dependencies and never asks the project to install its own. This removes a class of version-conflict failure that a shared runtime would have carried.
+- **Node.js is optional at install time and required only for authoritative depth-1 resolution** (FR-2.6f, FR-2.6g). In practice the target user has it, because they have a TypeScript repository; the degrade path exists so that its absence is reported rather than fatal.
+- **The host language is not the target language, and this costs something in CF-2.** Syntax is fully served in-process; module resolution is not, which is why the sidecar exists. See [ADR-0007](./adr/0007-python-harness-typescript-target.md) and §9, R-7.
 - Single provider and single language are deliberate scoping decisions, not technical limitations.
 
 ### 2.5 What v1 deliberately is not
@@ -176,7 +190,7 @@ Written as testable "the system shall…" statements. Identifiers are inherited 
 
 ### 4.2 CF-2 — Parsing and Related Context
 
-- **FR-2.2 (Must)** The system shall build a `tree-sitter` AST for changed TS/JS files.
+- **FR-2.2 (Must)** The system shall build a `tree-sitter` AST for changed TS/JS files, in the host process, without invoking the target language's toolchain.
 - **FR-2.4 (Should)** The system shall include relevant surrounding context — function, class, and type boundaries — rather than raw line windows.
 - **FR-2.3d (Must)** The system shall record which related files were included and why, for traceability.
 
@@ -200,6 +214,10 @@ The ladder is ordered by **cost of resolution**, not purely by graph distance. A
 - **FR-2.6c (Must) (new in v1)** Every returned context unit shall carry the relation by which it was included (`imports`, `calls`, `imported-by`, `called-by`) and its distance from the change.
 - **FR-2.6d (Must) (new in v1)** A retrieval result shall state the depth actually achieved and, where that is lower than requested, the reason. The system shall not silently downgrade.
 - **FR-2.6e (Must) (new in v1)** No consumer of the interface shall branch on which implementation served the request.
+- **FR-2.6f (Must) (new in v1)** Depth-1 module-specifier resolution shall be delegated to a bundled resolver process over a documented request/response contract. That process shall be started at most once per invocation, shall be shipped with the package rather than fetched at review time, and shall not be observable outside CF-2 (FR-2.6e).
+- **FR-2.6g (Must) (new in v1)** Where the resolver process is unavailable or fails, the system shall fall back to heuristic path resolution, mark the retrieval result `degraded: 'unresolvable-imports'`, and complete the review. The absence of the resolver shall never fail an invocation (FR-11.2).
+
+*FR-2.6f is what buys authoritative resolution — `tsconfig` path aliases, index files, package `exports` maps, workspace links — from the target language's own compiler rather than from a reimplementation of it. FR-2.6g is what stops that from becoming a hard dependency. The pair is stated in [ADR-0007](./adr/0007-python-harness-typescript-target.md); the "at most once per invocation" clause in FR-2.6f is a latency requirement, not an implementation note, because a process launched per specifier would multiply a fixed startup cost across every import in the change.*
 
 Normative interface:
 
@@ -235,10 +253,12 @@ interface RelatedContextProvider {
 
 | Implementation | `maxDepth` | Requires | Version |
 |---|---|---|---|
-| `ParserContextProvider` | 1 | Nothing beyond the changed files | **v1** |
+| `ParserContextProvider` | 1 | Nothing beyond the changed files at depth 0; the resolver sidecar for authoritative depth 1, degrading without it (FR-2.6g) | **v1** |
 | `IndexContextProvider` | 3 | A built reverse index | v2 |
 
 FR-2.6e is the requirement that makes v2 a new implementation rather than a change to CF-4, CF-6, and CF-7. It is the highest-value structural constraint in this document.
+
+It also absorbs the resolver sidecar entirely. The sidecar is `ParserContextProvider`'s private business: it changes the *quality* of what the interface returns and is reported through `degraded`, but no consumer learns of its existence, and no signature above changes because of it.
 
 ### 4.3 CF-3 — Execution and Evidence
 
@@ -250,6 +270,9 @@ FR-2.6e is the requirement that makes v2 a new implementation rather than a chan
 - **FR-4.5b (Must)** The system shall record each executed check's pass/fail result and captured output.
 - **FR-4.5c (Must)** The system shall make this execution record available to the review agent and include it in the structured output.
 - **FR-4.6 (Must) (new in v1)** The review agent shall not be able to trigger check execution. Execution occurs once per invocation, before the review pass.
+- **FR-4.7 (Must) (new in v1)** Checks shall be executed as subprocesses invoking the reviewed project's own toolchain and package manager, discovered from its manifest or named in configuration. The system shall not import the reviewed project's dependencies into the host runtime, and shall not require the reviewed project to install anything belonging to the system.
+
+*FR-4.7 is the one consequence CF-3 takes from the host language being different from the target language ([ADR-0007](./adr/0007-python-harness-typescript-target.md)). It is close to free: the system was always going to shell out to `npm test` and `tsc`, and it now has no mechanism to do anything else. What the requirement adds is the second half — that the reviewer never contaminates the project it is reviewing, in either direction. A version conflict between reviewer and reviewed is not a bug that can be introduced.*
 
 *FR-4.6 states for v1 the decision in [ADR-0002](./adr/0002-pipeline-initiates-test-execution.md). That record notes the prohibition relaxes on a local surface where a targeted run costs seconds; v1 nonetheless keeps it, because the single-pass agent (FR-5.7) has no loop in which to call such a tool. Both may be revisited together in v2.*
 
@@ -281,8 +304,11 @@ FR-2.6e is the requirement that makes v2 a new implementation rather than a chan
 - **FR-5.1 (Must)** The review agent shall operate in a context isolated from any code-writing agent — no shared history or state.
 - **FR-5.3 (Must)** The agent shall incorporate execution results (CF-3) and pattern-library rules (CF-8) into its findings.
 - **FR-5.7 (Must) (new in v1)** The agent shall complete a review in a single model pass. No tool loop shall run in v1; `emit_finding` is the only tool exposed.
+- **FR-5.8 (Must) (new in v1)** The agent framework shall be confined to CF-6. No module outside CF-6 shall import it, and the pipeline steps outside CF-6 shall be callable as ordinary functions without it.
 
 *FR-5.7 is [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md) at step ceiling zero — its documented fallback, adopted deliberately. Raising the ceiling in a later version is a configuration change, not a restructure.*
+
+*FR-5.8 keeps ADR-0001 true now that a framework is in the repository. That record's decision was that **our code owns orchestration** and the model's agency lives in one step; adopting an agent framework is the most natural way to give that away by accident, one convenient node at a time. Confining it to CF-6 costs nothing — the fixed steps have no loops, no branching on model output, and nothing for a graph to orchestrate — and it keeps CF-1 through CF-5 and CF-7 unit-testable without a framework in the fixture. It is checkable by import list, which is why it joins AC-10 rather than needing an acceptance criterion of its own.*
 
 ### 4.7 CF-7 — Output
 
@@ -339,6 +365,8 @@ FR-2.6e is the requirement that makes v2 a new implementation rather than a chan
 |---|---|---|
 | Change set (files + hunks) | FR-10.3c | Frozen — the v3 adapter substitutes its producer |
 | `RelatedContextProvider` | §4.2.2 | Frozen — v2 adds an implementation, not a signature |
+| Resolver sidecar request/response | FR-2.6f | Internal to CF-2. Free to change — no consumer may observe it (FR-2.6e) |
+| Check invocation (project toolchain) | FR-4.7 | A subprocess boundary, not a linked one; the host runtime and the project's runtime stay separate |
 | Finding model + schema | FR-0.1, FR-0.4 | Versioned; changes require a schema-version bump |
 | `emit_finding` tool schema | FR-5.6a | Equals the finding model; one definition, not two |
 | JSON output | FR-8.2b, FR-8.2c | Versioned with the finding model |
@@ -361,11 +389,12 @@ v1 is complete when all of the following hold. Each is verifiable by execution, 
 | **AC-7** | A run where the tests could not execute says so, and is distinguishable in both outputs from a run that found nothing | FR-4.5a, FR-11.2 |
 | **AC-8** | Requesting depth 2 reports `achievedDepth: 1` with reason `no-index`, and completes the review | FR-2.6d |
 | **AC-9** | A malformed config fails with the offending field named; a missing provider key fails with a message saying so | FR-1.2d, FR-9.3 |
-| **AC-10** | No module outside CF-7 imports a terminal-rendering dependency, and no module outside CF-1 resolves a change scope | FR-10.2, FR-2.6e |
+| **AC-10** | No module outside CF-7 imports a terminal-rendering dependency, no module outside CF-1 resolves a change scope, and no module outside CF-6 imports the agent framework | FR-10.2, FR-2.6e, FR-5.8 |
+| **AC-12** | With the resolver sidecar made unavailable, a review of the same repository still completes and reports `degraded: 'unresolvable-imports'`, distinguishably from a run where every import resolved | FR-2.6f, FR-2.6g, FR-11.2 |
 
 **AC-5 and AC-7 are the two to defend under schedule pressure.** Without measurement there is no way to know whether the reviewer improved. Without the skipped/errored distinction, "no findings" silently means both "clean" and "broken".
 
-**AC-8 and AC-10 are structural.** They verify that v2 and v3 are additions rather than rewrites, and they are cheap to check.
+**AC-8, AC-10 and AC-12 are structural.** They verify that v2 and v3 are additions rather than rewrites, and that an optional prerequisite stayed optional. All three are cheap to check — AC-10 is an import list, AC-8 and AC-12 are one run each with a capability removed.
 
 ---
 
@@ -384,7 +413,7 @@ Full reasoning for each is in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) §4.
 | Pattern coverage reporting | FR-6.2c | v2 |
 | A broad default rule set | FR-6.3 | v2 — v1 ships five (FR-6.3a) |
 | Fix snippets and evidence links | FR-7.1a, FR-7.3 | v2 |
-| Platform support matrix and prebuilt binaries | FR-10.6 | v2 — v1 runs from source |
+| Platform support matrix, prebuilt binaries, containerised distribution | FR-10.6 | v2 — v1 ships a PyPI wheel and documents what it was tested on; a formal matrix, standalone binaries, and an image are later work ([ADR-0007](./adr/0007-python-harness-typescript-target.md)) |
 | Tolerating unparseable working trees | FR-10.7 | v2 — v1 requires a parseable tree and says so |
 | **All GitHub integration** — Action trigger, PR comments, suggested-change blocks, status checks, example workflow, untrusted-code isolation, comment ledger | FR-1.1, FR-1.3, FR-1.4, FR-2.1, FR-7.1, FR-8.1a, FR-8.1c, FR-8.3, FR-9.2; [ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md), [ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md) | **v3** |
 
@@ -397,6 +426,8 @@ FR-7.2 — suggestions are advisory, with no commit, push, or auto-apply — is 
 Deferred to a dedicated pass. Open items carried into it:
 
 - Concrete budgets: maximum review latency, context token cap, maximum change-set size handled
+- The resolver sidecar's startup cost measured against the latency budget, and the point at which its share stops being acceptable (FR-2.6f)
+- Supported operating systems and Python versions, and whether the resolver's Node requirement gets a documented minimum version (FR-10.6, deferred to v2)
 - Cost target per invocation, and the model-selection policy that meets it
 - A quantitative catch-rate and false-positive target for the regression corpus (§6, AC-5)
 - Execution isolation and the untrusted-code security model — **a v3 concern**; v1 executes only the developer's own code on their own machine
@@ -413,6 +444,8 @@ Deferred to a dedicated pass. Open items carried into it:
 | **R-4** | **Prompt and context tuning has unbounded effort.** | High | The reason the CLI surface was chosen ([ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md)): iteration runs in seconds. AC-5 gives the work a stopping condition. |
 | **R-5** | **v1 does not address the stated problem.** It helps an author before they push, not a reviewer clearing a queue. | High | Structural, inherited from sequencing GitHub to v3. Stated in §1.1 and §2.2, and to be restated whenever v1 is demonstrated so it is not mistaken for the product. |
 | **R-6** | **Five rules is not a product.** | Medium | Accepted (FR-6.3a). v1 proves the mechanism; breadth is authoring work that should not gate a first release. |
+| **R-7** | **The host language is not the target language.** Python has no native understanding of TypeScript, so depth-1 quality rests on a sidecar that may be absent, and findings needing a type checker's view rather than a resolver's stay out of reach. | Medium | Confined to CF-2 and reported, never silent (FR-2.6f, FR-2.6g, AC-12). The corpus can price the degraded path directly, since FR-6.2e already pins the settings a run was measured at. Growing the sidecar's role beyond resolution would be a new decision, not a refactor. |
+| **R-8** | **The target user may not have Python.** A TypeScript developer has Node; "install Python to review your TypeScript" is adoption friction the npm route did not have. | Medium | Accepted for v1, whose users are the people building the system (§2.2). Revisit before wide release — the standalone-binary and container options are recorded in [ADR-0007](./adr/0007-python-harness-typescript-target.md), and prebuilt distribution is already a v2 item (FR-10.6, §7). |
 
 ---
 
@@ -436,6 +469,8 @@ flowchart TD
 
 Measurement is third, not last, on purpose: after step 3 every subsequent change can be evaluated instead of argued about, and step 4 can be assessed at depth 0 versus depth 1 on a fixed corpus.
 
+The stack falls in the same order. **Step 1 needs neither `tree-sitter` nor the resolver sidecar** — the walking skeleton is a CLI entry point, a schema, and one model call, and it should be standing before either is installed. `tree-sitter` arrives at step 4 with depth 0; the sidecar arrives immediately after it with depth 1, at which point AC-12's degraded path becomes measurable — depth 1 with and without the resolver is a second comparison the corpus can price, on the same axis as depth 0 versus depth 1.
+
 ## Appendix B — Traceability
 
 | Requirement | Core function | Verified by |
@@ -443,11 +478,11 @@ Measurement is third, not last, on purpose: after step 3 every subsequent change
 | FR-0.1, FR-0.2, FR-0.3, FR-0.4 | CF-5 | AC-3 |
 | FR-1.2a–d, FR-1.3a | CF-9 | AC-9 |
 | FR-2.2, FR-2.3d, FR-2.4 | CF-2 | AC-1 |
-| FR-2.6a–e | CF-2 | AC-8, AC-10 |
+| FR-2.6a–g | CF-2 | AC-8, AC-10, AC-12 |
 | FR-2.3c, FR-2.5, FR-2.5a–c | CF-4 | AC-1, AC-3 |
 | FR-3.5 | CF-9 | AC-1 |
-| FR-4.1, FR-4.2, FR-4.4a–b, FR-4.5a–c, FR-4.6 | CF-3 | AC-2, AC-7 |
-| FR-5.1, FR-5.3, FR-5.7 | CF-6 | AC-2 |
+| FR-4.1, FR-4.2, FR-4.4a–b, FR-4.5a–c, FR-4.6, FR-4.7 | CF-3 | AC-1, AC-2, AC-7 |
+| FR-5.1, FR-5.3, FR-5.7, FR-5.8 | CF-6 | AC-2, AC-10 |
 | FR-5.2, FR-5.6, FR-5.6a–b | CF-5 | AC-3 |
 | FR-6.1, FR-6.2a, FR-6.2b, FR-6.2d, FR-6.3a | CF-8 | AC-4, AC-5, AC-6 |
 | FR-7.2 | — | Satisfied by absence of a write path |

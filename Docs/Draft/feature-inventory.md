@@ -193,12 +193,13 @@ Features observed in Greptile, CodeRabbit, Qodo, Claude Code Review, Danger/Dang
 
 | Feature | Description | Complexity |
 |---|---|---|
-| CLI entry point and packaging | An npm package with a bin entry, replacing part of the Action packaging work | Low |
+| CLI entry point and packaging | A PyPI package with a console entry point, replacing part of the Action packaging work | Low |
 | Change-scope resolution | Decide and expose what "review my changes" means: working tree, staged only, against the default branch, or since the branch point | **Medium** — ambiguous by nature, and the default silently changes what gets reviewed |
 | Terminal renderer | Streaming output, progress while the model thinks, terminal-versus-pipe detection, colour, meaningful exit codes | Medium |
 | Machine-readable CLI output | The same finding model serialised for scripting, mirroring the Action's JSON artifact | Low |
 | Local state file | Tier-3 memory as a gitignored file instead of a hidden comment ledger | Low |
-| Platform distribution | Prebuilt native parser binaries per operating system and runtime version, or a WebAssembly build with a performance cost | **Medium–High** — the largest single new item; the Action made it free by controlling the machine |
+| Platform distribution | Native `tree-sitter` parser wheels per operating system and Python version, plus the bundled resolver sidecar carried as package data | **Medium–High** — the largest single new item; the Action made it free by controlling the machine |
+| Resolver sidecar | A bundled script in the target language's own toolchain answering depth-1 module resolution, started once per invocation, degrading and reporting when absent (FR-2.6f, FR-2.6g) | **Medium** — a second language in the build, but confined behind one interface |
 | Configuration and cache discovery | Repository-level and user-level configuration and their merge order; a cache location that behaves on every platform | Low |
 | Tolerating code that does not compile | A working tree can be mid-edit; the agent must distinguish *wrong* from *unfinished* | Low–Medium |
 | Quota'd execution tool | A narrow `run_single_test_file` the model may call, affordable only where dependencies are warm | Low |

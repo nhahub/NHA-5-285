@@ -99,7 +99,7 @@ Internally, the two surfaces are **thin adapters over a shared core**. An adapte
 
 **Specified in [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md) §1.2 and §4 — not restated here.**
 
-In outline, v1 is a local CLI reviewing a TS/JS change set, with `tree-sitter` parsing, related context at depths 0–1 behind a depth-parameterised interface, local execution of tests and type checks with a recorded evidence trail, a single-pass fresh-context review agent, a canonical finding model with terminal and JSON output, and a pattern library with a runnable regression harness.
+In outline, v1 is a local CLI — written in Python, reviewing TypeScript ([ADR-0007](../adr/0007-python-harness-typescript-target.md)) — over a TS/JS change set, with `tree-sitter` parsing, related context at depths 0–1 behind a depth-parameterised interface, local execution of tests and type checks with a recorded evidence trail, a single-pass fresh-context review agent, a canonical finding model with terminal and JSON output, and a pattern library with a runnable regression harness.
 
 Note two items this catalogue lists for the CLI surface that v1 does **not** implement, both deferred to v2: deterministic risk triage (FR-3.1–FR-3.4, replaced in v1 by a path-exclusion list) and context depths 2 and above (FR-2.3a, FR-2.3b). The full inclusion and exclusion list, with reasoning, is in [`mvp-scope.md`](./mvp-scope.md) §3 and §4.
 
@@ -162,7 +162,9 @@ Consequences elsewhere in the document set:
 
 - **Platform:** a developer workstation — Linux, macOS, or Windows.
 - **Trigger:** an explicit command; no CI, no GitHub API, and no repository credentials required.
-- **Distribution:** an npm package with an executable entry point. Note that `tree-sitter` is a native module, so supported operating systems and Node.js versions form a distribution contract the Action surface never needed (FR-10.6).
+- **Host runtime:** Python, with `tree-sitter` bindings as a native extension, LangChain for the provider interface, and LangGraph confined to the review step ([ADR-0007](../adr/0007-python-harness-typescript-target.md)).
+- **Distribution:** a PyPI package with a console entry point, installed with `uv tool install` or `pipx`. Because `tree-sitter` bindings are a native extension, supported operating systems and Python versions form a distribution contract the Action surface never needed (FR-10.6).
+- **Optional prerequisite:** Node.js, for the bundled resolver sidecar that answers depth-1 module resolution from the TypeScript compiler's own algorithm. Required for authoritative depth 1, never for installation; its absence degrades and is reported. Specified normatively as FR-2.6f and FR-2.6g in [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md).
 
 **Action surface — v3 (§2.3.3)**
 
@@ -191,14 +193,18 @@ Consequences elsewhere in the document set:
 | **Fresh-context review** | Running the review agent in a context isolated from any code-writing agent, to avoid self-confirmation bias. |
 | **Fresh-Context Review Agent** | The component that produces findings from the gathered context, execution evidence, and pattern library. |
 | **GitHub Action** | A CI workflow unit that runs in a repository's pipeline; the primary product surface (as opposed to a hosted GitHub App), deferred to v3 (§2.3.3). |
+| **Host language** | The language the system itself is written in — Python ([ADR-0007](../adr/0007-python-harness-typescript-target.md)). Distinct from the **target language** below. |
+| **Module resolution** | Turning an import specifier — the string `'./auth'` or `'@app/db'` — into the file on disk it refers to. `tree-sitter` yields the specifier; resolving it requires the target language's own algorithm, which is why the resolver sidecar exists. |
 | **Pattern library** | A configurable set of "wrong vs. correct" examples and project standards the agent applies when generating findings. |
 | **PR (Pull Request)** | A proposed set of changes to a repository, the unit reviewed by the system. |
+| **Resolver sidecar** | A bundled helper process, in the target language's own toolchain, that answers module-resolution questions for the host process. Private to the context-gathering component; started at most once per invocation, and degraded-but-reported when unavailable (FR-2.6f, FR-2.6g). |
 | **Risk tier** | A deterministic classification (e.g. trivial / normal / critical) that drives review depth and optional model selection. |
 | **Remediation Engine** | The component responsible for fix proposals; limited to advisory suggestions (auto-apply deferred — see Appendix A). |
 | **Suggested-change block** | A GitHub review-comment feature that proposes a specific localized edit the author can accept directly. |
 | **Surface** | A way a user reaches the system. v1 has one — the local CLI; the GitHub Action is added in v3. |
-| **Tool Sandbox** | The execution environment where tests, builds, and scans run: the developer's machine in v1, a GitHub-hosted runner from v3. |
-| **`tree-sitter`** | An incremental parsing library used to build ASTs for dependency and structure analysis. |
+| **Target language** | The language of the code being reviewed — TypeScript/JavaScript. Distinct from the **host language** above; see [ADR-0007](../adr/0007-python-harness-typescript-target.md). |
+| **Tool Sandbox** | The execution environment where tests, builds, and scans run: the developer's machine in v1, a GitHub-hosted runner from v3. In v1 this is always a subprocess running the project's own toolchain, never the host runtime (FR-4.7). |
+| **`tree-sitter`** | An incremental parsing library used to build ASTs for dependency and structure analysis. Used from the host language via its bindings, in-process. It yields the shape of the source text; it does not resolve imports — see **module resolution**. |
 | **Must / Should** | Requirement priority tags: **Must** = v1 core; **Should** = v1 if time allows. |
 | **NFR** | Non-Functional Requirement (performance, isolation, cost, latency) — addressed in a separate pass. |
 
@@ -275,6 +281,8 @@ The single canonical structure for all review findings. Defined once here; every
 
 *(Isolation guarantees and specific time/resource budget values are deferred to §5, the NFR pass.)*
 
+*(Because the harness and the reviewed project no longer share a runtime, checks are invoked through the project's own toolchain as subprocesses and the harness never imports the project's dependencies. That is stated normatively for the build target as FR-4.7 in [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md); it is a consequence of [ADR-0007](../adr/0007-python-harness-typescript-target.md), not a change to FR-4.1 or FR-4.2, which never named a runtime. FR-4.3 is likewise unaffected: `npm audit` is a property of the project under review.)*
+
 ### 4.5 FR-5 — Fresh-Context Review Agent
 
 - **FR-5.1 (Must)** The review agent shall operate in a context isolated from any code-writing agent (no shared history/state).
@@ -328,7 +336,7 @@ Added by [ADR-0006](../adr/0006-local-cli-core-action-as-adapter.md). The CLI is
 - **FR-10.4b (Must)** The CLI shall provide machine-readable output conforming to the same versioned schema as the Action's JSON artifact (FR-8.2b).
 - **FR-10.4c (Should)** The CLI shall exit with a status code reflecting the review outcome, documented and stable across versions.
 - **FR-10.5 (Should)** The CLI shall persist per-change-set state locally so repeated invocations can suppress findings already reported, using the same fingerprint definition as the Action surface.
-- **FR-10.6 (Should)** The system shall document the operating systems and Node.js versions the CLI supports, and shall fail with a clear message on an unsupported combination.
+- **FR-10.6 (Should)** The system shall document the operating systems and Python versions the CLI supports — together with any minimum version of the optional Node.js runtime used by the resolver sidecar — and shall fail with a clear message on an unsupported combination. *(Reworded, not renumbered, when the host language was decided in [ADR-0007](../adr/0007-python-harness-typescript-target.md); it previously named Node.js versions, on the assumption that the harness shared a runtime with the code it reviews.)*
 - **FR-10.7 (Should)** The CLI shall tolerate a working tree that does not fully parse or type-check, and shall distinguish incomplete code from defective code in its findings.
 
 ---
