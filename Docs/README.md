@@ -19,6 +19,7 @@ Everything in [`Draft/`](./Draft/) is **non-normative**. It records analysis, ra
 | [`Draft/agent-harness-design.md`](./Draft/agent-harness-design.md) | Plain-language guide to the agent harness — tools, memory, environments, model selection. |
 | [`Draft/agentic-architecture-review.md`](./Draft/agentic-architecture-review.md) | Assessment of an external agentic-architecture review of [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md): what to adopt, when, and what to reject. |
 | [`Draft/agent-loop-v1-v2.md`](./Draft/agent-loop-v1-v2.md) | The review step visualised before and after the tool loop is enabled, with a worked trace of the same change reviewed both ways. |
+| [`Draft/system-analysis/`](./Draft/system-analysis/system_analysis.md) | System analysis of v1: actors and use cases, requirement and domain models, workflows, a degradation and traceability matrix, and open questions raised against the specification. |
 | [`Draft/Agentic_Code_Review_Problem_Definition_v1.md`](./Draft/Agentic_Code_Review_Problem_Definition_v1.md) | Problem definition, personas, and the commit-first decision. |
 | [`Draft/competitive-landscape.md`](./Draft/competitive-landscape.md) | Where this project sits against existing tools. |
 | [`Draft/tool-reference.md`](./Draft/tool-reference.md) | Neutral descriptions of seven comparable tools. |
