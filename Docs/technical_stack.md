@@ -276,6 +276,26 @@ Contract 6 has no acceptance criterion because it defends a design decision rath
 
 Three things this document asserts that should be tested rather than trusted, because they are the assumptions most likely to be wrong and cheapest to check early:
 
+### Pinned versions
+
+Pinned by the first install in feature 001 (walking skeleton), resolved on 2026-09-17 for CPython 3.12.13 on Windows. `uv.lock` holds them exactly, along with every transitive dependency. This table records them. `tree-sitter` is not installed until feature 004, so it is not pinned until S-2 has run.
+
+| Package | Version | Role |
+|---|---|---|
+| `pydantic` | 2.13.5 | Finding model, report schema, config validation |
+| `pyyaml` | 6.0.3 | Config parsing |
+| `typer` | 0.27.2 | CLI (with `click` 8.5.0) |
+| `rich` | 15.0.0 | Terminal rendering |
+| `langchain-core` | 1.6.3 | Tool binding, messages |
+| `langchain-openai` | 1.6.2 | OpenAI-compatible provider client |
+| `langgraph` | 1.2.11 | Review-step graph (CF-6 only) |
+| `openai` | 3.14.1 | Transitive; its `APIError` hierarchy is mapped to `provider-error` |
+| `pytest` | 9.1.1 | dev |
+| `import-linter` | 2.15 | dev · structural contracts |
+| `jsonschema` | 4.26.0 | dev · independent report-schema validation (SC-002) |
+
+### Assumptions to test
+
 | # | Assumption | How to check | If wrong |
 |---|---|---|---|
 | **S-1** | The chosen NIM model calls `emit_finding` reliably enough for one call per review | A fixed prompt, fifty runs, count malformed and missing tool calls | FR-5.6b's structured-output fallback becomes the primary path, and the retry cap needs a measured value. This is flagged in ADR-0001, ADR-0004 and the harness design as the single highest-risk provider assumption |
