@@ -11,6 +11,12 @@
 
 > **Scope note (2026-09-08).** GitHub integration is now deferred to **v3** ([SRS §2.3.3](../Draft/agentic-code-review-srs.md)), so this record has **no effect in v1 or v2**. The fingerprint design in §"The part that decides whether this works at all" is the part worth reading early: v1 stores state in a local file (FR-10.5), but if its fingerprints are built on line numbers, the v3 ledger inherits a broken foundation.
 
+> **Correction (2026-09-14).** The scope note above is wrong on one point: **v1 has no state file.** FR-5.5 and FR-10.5 are both deferred to v2 ([SRS §7](../agentic-code-review-srs-v1.md)), so there is nothing in v1 for a fingerprint to be stored in.
+>
+> **The advice survives anyway, and gains a first user.** The fingerprint's first consumer in v1 is not deduplication but **measurement**: SRS v1.1 added FR-6.2f, which requires the regression harness to decide when an emitted finding counts as catching an expected defect, using a rule that is **independent of line numbers** — for exactly the reason this record gives. A matcher keyed to position re-scores itself whenever an unrelated edit shifts a file.
+>
+> So the table of what to hash and what to exclude, below, should be read as binding on v1's corpus matcher, and inherited unchanged by the v3 ledger. Two features, one design, arrived at twice for the same reason.
+
 > **Amendment note.** [ADR-0006](./0006-local-cli-core-action-as-adapter.md) (Accepted) added a local command-line surface, where **the problem this record solves largely does not arise.** A developer's machine has a filesystem, so state is an ordinary gitignored file rather than a hidden comment. The fingerprint design below is shared by both surfaces; only the storage location differs. The *motivation* also weakens locally: pull-request comments accumulate permanently and visibly, whereas terminal output is replaced on every run, and a developer re-running after a fix wants the current full state rather than a delta of what is new.
 
 ---

@@ -11,6 +11,12 @@
 
 > **Amendment note.** [ADR-0006](./0006-local-cli-core-action-as-adapter.md) (Accepted) added a second delivery surface: a local command-line tool sharing this same core. **The structure below is unchanged** — the fixed pipeline and the tier-gated step ceiling hold on both surfaces. What differs is what the ceiling is tuned against: **money** on the Action, where tokens come from a fixed budget, and **wall-clock latency** on the CLI, where a developer waiting at a prompt gives up after roughly ten to thirty seconds. Both remain configuration values.
 
+> **Superseded detail (2026-09-14) — the latency figure, and what the ceiling counts.** Two details in this record have since been corrected by [SRS v1.1](../agentic-code-review-srs-v1.md). **The decision is unaffected**; both corrections are about numbers and counting, not about who owns orchestration.
+>
+> **The "ten to thirty seconds" above is withdrawn.** It was an estimate nobody measured, and by the time four documents were citing it, it had begun sizing design decisions as though it were evidence. SRS §2.4 now states that latency is the binding constraint on this surface without attaching a figure, and carries the threshold as **TBD-2** — to be established by observing real users of the shipped MVP. *Latency being the CLI's binding budget is unchanged. Only the number is gone.*
+>
+> **The step ceiling counts every tool call, including `emit_finding`.** This record's "0 / ~5 / ~15 tool steps" table reads naturally as counting investigation steps. SRS v1.1 found that reading collided with [ADR-0004](./0004-findings-emitted-as-tool-calls.md) — if findings arrive only as tool calls and the ceiling is zero, no finding can ever be emitted. The ceiling now bounds **total** calls, and *whether the model may investigate at all* is a separate switch (FR-5.7a). The tier-gated shape this record chose survives intact; it is now expressed with two settings instead of one overloaded number.
+
 ---
 
 ## The question

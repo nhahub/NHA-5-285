@@ -15,6 +15,7 @@ These records use the same plain-language style as [`agent-harness-design.md`](.
 | [0005](./0005-cross-run-memory-as-hidden-comment-ledger.md) | Memory that must survive between runs lives in a hidden ledger inside the summary comment | Proposed |
 | [0006](./0006-local-cli-core-action-as-adapter.md) | The reviewing core is a local CLI; the GitHub Action is an adapter over it | **Accepted** |
 | [0007](./0007-python-harness-typescript-target.md) | The harness is Python with LangGraph; the reviewed language is TypeScript | **Accepted** |
+| [0008](./0008-agent-runtime-tool-registry-and-termination.md) | The ceiling counts every tool call; termination is the model declining to call one; the tool list is a versioned registry | **Accepted** |
 
 ## How they relate
 
@@ -27,6 +28,7 @@ flowchart TD
     D["ADR-0004<br/>Findings as<br/>tool calls"]
     E["ADR-0005<br/>Cross-run memory in a<br/>hidden comment ledger"]
     G["ADR-0007 ✅ Accepted<br/>Python harness, LangGraph in<br/>one step, TypeScript target"]
+    H["ADR-0008 ✅ Accepted<br/>Ceiling counts every call ·<br/>termination · tool registry"]
 
     A -->|"the pipeline owns execution,<br/>so it must decide when"| B
     A -->|"the pipeline checks out and runs<br/>PR code, so it owns the risk"| C
@@ -42,8 +44,14 @@ flowchart TD
     G ==>|"amends the distribution<br/>consequence only: a PyPI package,<br/>not an npm one"| F
     G -.->|"confines the agent framework<br/>to the one step where<br/>agency was already allowed"| A
 
+    H ==>|"supersedes two details:<br/>what the ceiling counts,<br/>and who ends the review"| A
+    H ==>|"scopes: permanently prohibited<br/>on the Action for a credential<br/>reason 0002 did not give"| B
+    H -.->|"resolves the collision —<br/>a zero ceiling forbade<br/>the only tool there was"| D
+    C -.->|"supplies the real reason<br/>execution stays off the Action"| H
+
     style F fill:#e8f7e8
     style G fill:#e8f7e8
+    style H fill:#e8f7e8
     style A fill:#e8eef7
 ```
 
@@ -57,17 +65,37 @@ GitHub integration was deferred to **v3** on 2026-09-08, and v1 was baselined as
 
 | Record | Binds from |
 |---|---|
-| 0001 — fixed pipeline, bounded agency | **v1**, at step ceiling zero — stated normatively as FR-5.7 |
-| 0002 — pipeline initiates test execution | **v1** on the CLI, where its prohibition relaxes; strictly from v3 on the Action |
+| 0001 — fixed pipeline, bounded agency | **v1**, with investigation switched off — stated normatively as FR-5.7a |
+| 0002 — pipeline initiates test execution | **v1 and v3, in full.** Its prohibition is *relaxable* on a local surface, but v1 does not take that option: FR-4.6 keeps it absolutely |
 | 0003 — untrusted code isolation, fork triggers | **v3** — no trust boundary exists locally |
+| 0005 — cross-run memory ledger | **v3.** Its *fingerprint* design binds v1 — not as state, which v1 has none of, but as the corpus matcher required by FR-6.2f |
 | 0004 — findings as tool calls | **v1** — the one record with no version or surface caveat |
-| 0005 — cross-run memory ledger | **v3** — though its fingerprint design binds v1's local state file |
 | 0006 — CLI core, Action as adapter | **v1** — and it is what lets v3 be an addition rather than a rewrite |
 | 0007 — Python harness, TypeScript target | **v1** — it binds from the first line of code, because it decides which language that line is in |
+| 0008 — agent runtime, registry, termination | **v1** for counting, termination, the registry and observations; its execution ruling binds **v2** on the CLI and **v3** on the Action |
+
+*Two rows were corrected on 2026-09-14. **0002** previously read "v1 on the CLI, where its prohibition relaxes", which invites an implementer to build the thing FR-4.6 forbids — [ADR-0006](./0006-local-cli-core-action-as-adapter.md) made the relaxation **available**, and v1 declined it. **0005** previously said its fingerprint design "binds v1's local state file"; v1 has no state file (FR-10.5 is v2), but the design binds v1 through a different door. See the correction note in that record.*
+
+### Superseded details
+
+These records are append-only and are not edited. Where a **detail** in one has since been overtaken, it is noted at the top of that record and listed here. In every case the **decision** stands — what changed is a number, a lifetime, or a way of counting.
+
+| Record | Detail | Superseded by |
+|---|---|---|
+| 0001, 0006, 0007 | The **10–30 second** latency figure | [SRS v1.1](../agentic-code-review-srs-v1.md) §2.4 — withdrawn as an unmeasured estimate; carried as TBD-2, to be established by observing real MVP users. *Latency remains the CLI's binding constraint; only the number is gone* |
+| 0001 | The **step ceiling counts investigation steps** | [ADR-0008](./0008-agent-runtime-tool-registry-and-termination.md) and SRS v1.1 FR-5.7 — it counts **every** tool call, `emit_finding` included, and investigation becomes a separate switch. Resolves a collision with ADR-0004 |
+| 0001 | *"Decide when the review ends"* listed as **not allowed** | [ADR-0008](./0008-agent-runtime-tool-registry-and-termination.md) — withdrawn. The model ends the review by replying without a tool call; the harness may never compel one (FR-5.10) |
+| 0002 | Agent-triggered execution deferred on **cost** grounds | [ADR-0008](./0008-agent-runtime-tool-registry-and-termination.md) — permanently prohibited on the Action for a **credential-boundary** reason instead; permitted on the CLI from v2 under a quota; not built in v1 |
+| 0007 | **One sidecar process per review**, as a requirement | SRS v1.1 FR-2.6f — restated as a property plus a budget. One process per review remains the right default; it is no longer mandated, so a measured alternative is permitted |
+| 0005 | "v1 stores state in a local file" | [SRS §7](../agentic-code-review-srs-v1.md) — v1 has no state file. The fingerprint design binds v1 through FR-6.2f instead |
+
+All four were raised during the design phase and are recorded in [`DESIGN_BLOCKERS.md`](../../DESIGN_BLOCKERS.md).
 
 ### Reading order
 
 ADR-0006 was decided last but changes how the others should be read, so read it **first** if you are new to this set. Records 0001 through 0005 were written assuming a single delivery surface — a GitHub Action reviewing a pull request. They remain correct on that surface. Where 0006 marks one as scoped, its reasoning applies to the Action adapter and not to the shared core.
+
+**Read the note at the top of a record before its body.** Amendment, scope and superseded-detail notes are how this set stays append-only: the reasoning below a note is preserved exactly as it was written, which means a number or a mechanism in it may since have been overtaken. The note says which. Where a record and [the specification](../agentic-code-review-srs-v1.md) disagree, the specification wins.
 
 ## Status values
 

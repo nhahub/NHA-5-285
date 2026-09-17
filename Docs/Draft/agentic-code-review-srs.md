@@ -14,11 +14,35 @@
 > | Why v1 contains what it contains | [`mvp-scope.md`](./mvp-scope.md) — the selection analysis |
 > | What comes after v1, and the requirement identifiers reserved for it | This document |
 
-**Two amendments shaped the roadmap below.**
+**Three amendments shaped the roadmap below.**
 
 > **[ADR-0006](../adr/0006-local-cli-core-action-as-adapter.md) (Accepted, 2026-09-08).** The system is **one reviewing core reached through thin surface adapters**. Sections 1.3, 2.2, 2.3.1, 2.6, 3 and 4.10 reflect this. Requirements are surface-independent unless they say otherwise — see the note opening §4.
 
 > **GitHub integration deferred to v3 (2026-09-08).** All GitHub-dependent behaviour — the Action trigger, PR comments, suggested-change blocks, status checks, and the example workflow — moves to **v3** and is listed in §2.3.3. **Requirement identifiers are unchanged**; affected requirements carry a **(v3)** tag in place of their Must/Should tag, so existing cross-references in the ADRs and design documents remain valid.
+
+> **Design-review corrections, SRS v1.1 (2026-09-14).** The design phase found that several requirements specified a *mechanism* where they should have stated a *property*, and that three pairs contradicted each other. [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md) §10 records every change; the reasoning is in [`DESIGN_BLOCKERS.md`](../../DESIGN_BLOCKERS.md).
+>
+> **This catalogue is not rewritten** — it is a historical record as well as a registry, and the text below is what was catalogued on 2026-09-08. But it is the registry, so two things have to be visible here:
+>
+> **Identifiers reserved by v1.1**, and not to be reused for anything else:
+>
+> | Identifier | For |
+> |---|---|
+> | **FR-2.6h** | All simultaneous degradation reasons reported, not one |
+> | **FR-5.2a** | Severity vocabulary |
+> | **FR-5.2b** | Category vocabulary, closed set |
+> | **FR-5.2c** | Evidence reference, or an explicit `unverified` marker |
+> | **FR-5.6c** | One repair turn after a failed validation |
+> | **FR-5.9** | Structured tool observation with `ok` / `error` / `denied` |
+> | **FR-5.10** | No compelled tool call; a reply without one is termination |
+> | **FR-6.2f** | A documented, line-independent rule for what counts as a catch |
+> | **FR-8.2d** | Tool calls reported as a total **and** a breakdown |
+> | **FR-8.2e** | Every degradation recorded in the structured output |
+> | **AC-13 … AC-16** | Acceptance criteria for the above |
+>
+> **Identifiers whose wording changed in v1.1** — the identifier is stable, the text is not, and **v1.1's text governs**: FR-2.2, FR-2.6f, FR-2.6g, FR-3.5, FR-0.3, FR-5.7, FR-5.7a, FR-5.7b, FR-5.7c, FR-8.2a, FR-8.2b, FR-8.2c, FR-10.4c.
+>
+> ⚠️ **[`agentic-code-review-srs-ar.md`](./agentic-code-review-srs-ar.md) does not reflect any of this** and is stale with respect to the identifiers above.
 
 ---
 

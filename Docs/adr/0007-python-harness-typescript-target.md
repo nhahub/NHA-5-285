@@ -8,6 +8,12 @@
 | **Amends** | [ADR-0006](./0006-local-cli-core-action-as-adapter.md) (distribution consequences only) |
 | **Leaves unchanged** | [ADR-0001](./0001-fixed-pipeline-with-bounded-agency.md) · [ADR-0002](./0002-pipeline-initiates-test-execution.md) · [ADR-0003](./0003-untrusted-code-isolation-and-fork-triggers.md) · [ADR-0004](./0004-findings-emitted-as-tool-calls.md) · [ADR-0005](./0005-cross-run-memory-as-hidden-comment-ledger.md) |
 
+> **Superseded detail (2026-09-14) — the latency figure, and the sidecar's lifetime.** Two details are corrected by [SRS v1.1](../agentic-code-review-srs-v1.md). **The decision — Python host, TypeScript target, resolution delegated to the target language's own algorithm, framework confined to CF-6 — is unaffected.**
+>
+> **The "10–30 seconds" this record quotes from SRS §2.4 is withdrawn.** It was an unmeasured estimate; the threshold is now TBD-2, to be established by observing real users of the MVP. The section below titled *"The constraint the two surfaces do not share"* remains correct in substance — latency binds locally where money binds on the Action — but its arithmetic rests on a number that no longer exists.
+>
+> **"One long-lived sidecar process per review" is no longer a requirement.** This record chose that lifetime, and FR-2.6f wrote it into the specification. v1.1 found the clause was a latency requirement wearing an implementation note's clothing — the specification said so itself — and restated FR-2.6f as *authoritative resolution, bundled not fetched, invisible outside CF-2, within TBD-1*. The practical consequence is that the persistent-daemon fallback named in [`technical_stack.md`](../technical_stack.md) §7 (S-3) is **no longer forbidden by the requirement**. It is now what it should always have been: a design choice to be made against a measurement. **One process per review remains the right default**, and this record's reasoning for it — a fixed boot cost paid once, batched rather than multiplied across specifiers — is unchanged.
+
 ---
 
 ## The question

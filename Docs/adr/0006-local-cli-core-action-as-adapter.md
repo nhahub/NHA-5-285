@@ -8,6 +8,10 @@
 | **Amends** | [ADR-0001](./0001-fixed-pipeline-with-bounded-agency.md) (retuned) · [ADR-0002](./0002-pipeline-initiates-test-execution.md) (scoped) · [ADR-0003](./0003-untrusted-code-isolation-and-fork-triggers.md) (scoped to the Action) · [ADR-0005](./0005-cross-run-memory-as-hidden-comment-ledger.md) (scoped to the Action) |
 | **Leaves unchanged** | [ADR-0004](./0004-findings-emitted-as-tool-calls.md) |
 
+> **Superseded detail (2026-09-14) — the latency figure.** Where this record puts a developer's patience at "roughly ten to thirty seconds", that figure is **withdrawn** by [SRS v1.1](../agentic-code-review-srs-v1.md) §2.4. It was an estimate nobody measured, and it had spread into four documents and begun sizing design decisions as if it were a finding — at one point forbidding a measured improvement (see [ADR-0007](./0007-python-harness-typescript-target.md)'s note). The threshold is now carried as **TBD-2**, to be established by observing real users of the shipped MVP.
+>
+> **This changes nothing in the decision below.** The core argument of this record is that the binding constraint *differs by surface* — money on the Action, **time** on the CLI — and that argument never depended on how much time. The iteration-speed reasoning that motivated the local surface (minutes versus seconds) is a comparison, not a threshold, and stands as written.
+
 ---
 
 ## The question
