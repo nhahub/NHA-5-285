@@ -1,0 +1,53 @@
+@startuml uc_overview
+' Use case overview - Agentic Code Review v1.
+' PlantUML is used here only because Mermaid has no native use case notation.
+' Part of: ../system_analysis.md, section 1.2
+
+title Agentic Code Review v1: Use Case Overview
+
+left to right direction
+
+actor "Developer\n(author)" as Dev
+actor "Contributor /\nMaintainer" as Maint
+actor "Regression Harness\n(corpus runner)" as Harness
+actor "Project Toolchain\n(npm test, tsc)" as Tool <<system>>
+actor "Model Provider\n(OpenAI-compatible,\nfree tier)" as LLM <<system>>
+
+rectangle "Agentic Review CLI (v1 core)" {
+  usecase "Review a local\nchange set" as UC1
+  usecase "Resolve change scope\n(working tree, staged,\nbranch or commit)" as UC2
+  usecase "Validate configuration\nand prerequisites" as UC3
+  usecase "Gather related context\n(depth 0 to 1)" as UC4
+  usecase "Run project checks\nand record evidence" as UC5
+  usecase "Generate schema-valid\nfindings" as UC6
+  usecase "Export JSON artifact" as UC7
+  usecase "Measure catch rate at\npinned depth and ceiling" as UC8
+  usecase "Maintain pattern rules\nand regression cases" as UC9
+}
+
+Dev --> UC1
+Maint --> UC8
+Maint --> UC9
+
+UC1 ..> UC3 : <<include>>
+UC1 ..> UC2 : <<include>>
+UC1 ..> UC4 : <<include>>
+UC1 ..> UC5 : <<include>>
+UC1 ..> UC6 : <<include>>
+UC7 ..> UC1 : <<extend>>
+UC8 ..> UC1 : <<include>>
+
+UC5 --> Tool
+UC6 --> LLM
+UC8 --> Harness
+
+note right of Harness
+  Ships inside the package (CF-8).
+  Modeled as a secondary actor because
+  it drives the review core as a caller,
+  one corpus case at a time.
+end note
+
+note "Out of scope in v1:\n- all GitHub integration (v3)\n- context depth 2 and above (v2)\n- any write path: commit, push, auto-apply" as OOS
+
+@enduml
