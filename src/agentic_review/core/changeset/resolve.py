@@ -14,7 +14,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from agentic_review.core.changeset._git import GitError, run_git, run_git_bytes, succeeds
+from agentic_review.core.changeset._git import GitError, GitNotFound, run_git, run_git_bytes, succeeds
+
+__all__ = ["GitError", "GitNotFound", "head_is_unborn", "locate_repository", "ref_exists", "resolve"]
 from agentic_review.core.changeset.diff_parser import (
     changed_line_ranges,
     parse_name_status,
