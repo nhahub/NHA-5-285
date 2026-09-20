@@ -258,8 +258,8 @@ This matters more than a missing folder. ADR-0001's entire decision is *"our cod
 |---|---|
 | SRS §3 | CF-5 = "Finding model **and provider client**" |
 | FR-0.3 | A new provider is integrated by mapping its output to the finding model — CF-5's requirement |
-| FR-5.8 | "The agent framework shall be confined to CF-6" |
-| stack §4 | Contract: "Only `core/agent/` may import LangChain or LangGraph" |
+| FR-5.8 | "The agent framework shall be confined to CF-6 and the pipeline orchestrator; no core-function package shall import it" |
+| stack §4 | Contract: "Only `core/agent/` and `core/pipeline/` may import LangChain or LangGraph" |
 
 The provider client **is** the LangChain client. So CF-5 owns a responsibility it is forbidden to implement.
 
@@ -333,7 +333,7 @@ AC-10 names three import contracts. Design specifies **five**, for the reasons i
 |---|---|---|---|
 | 1 | Only `core/output/` and `cli/` may import Rich | FR-10.4a | ✅ |
 | 2 | Only `core/changeset/` may import the git layer | CF-1 encapsulation | ✅ |
-| 3 | Only `core/agent/` may import LangChain or LangGraph | FR-5.8 | ✅ |
+| 3 | Only `core/agent/` and `core/pipeline/` may import LangChain or LangGraph — **no core-function package may** ([ADR-0009](../adr/0009-pipeline-as-declared-graph.md)) | FR-5.8 | ✅ |
 | 4 | Only `core/context/resolver/` may reference the sidecar bundle path | FR-2.6f | ❌ — stack §4 proposes it; no criterion names it |
 | 5 | **No module outside `core/context/` may name a concrete provider class** | **FR-2.6e** | ❌ — **nothing currently checks the SRS's highest-value constraint** |
 | 6 | Nothing imports `cli/`; capabilities do not import each other | §3 | ❌ — new |

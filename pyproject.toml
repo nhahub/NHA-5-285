@@ -69,11 +69,10 @@ forbidden_modules = ["agentic_review.core.changeset._git"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
-name = "3 - only core.agent may import LangChain, LangGraph or openai"
+name = "3 - no core-function package may import LangChain, LangGraph or openai"
 type = "forbidden"
 source_modules = [
     "agentic_review.cli",
-    "agentic_review.core.pipeline",
     "agentic_review.core.changeset",
     "agentic_review.core.assembly",
     "agentic_review.core.findings",
@@ -81,6 +80,15 @@ source_modules = [
     "agentic_review.core.config",
 ]
 forbidden_modules = ["langchain_core", "langchain_openai", "langgraph", "openai"]
+allow_indirect_imports = true
+
+# ADR-0009 lets the orchestrator declare its order as a graph. It does not let the provider client leave CF-6,
+# so core.pipeline gets LangGraph and nothing else.
+[[tool.importlinter.contracts]]
+name = "3b - core.pipeline may import LangGraph, but never a provider client"
+type = "forbidden"
+source_modules = ["agentic_review.core.pipeline"]
+forbidden_modules = ["langchain_core", "langchain_openai", "openai"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]

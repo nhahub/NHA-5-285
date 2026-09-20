@@ -233,7 +233,7 @@ The CF → module mapping is maintained in [`design/01-logical-architecture.md`]
 |---|---|---|---|
 | 1 | Only `core/output/` and `cli/` may import Rich | FR-10.4a | ✅ |
 | 2 | Only `core/changeset/` may import the git layer | CF-1 encapsulation | ✅ |
-| 3 | Only `core/agent/` may import LangChain or LangGraph | FR-5.8 | ✅ |
+| 3 | Only `core/agent/` and `core/pipeline/` may import LangChain or LangGraph — **no core-function package may** | FR-5.8 | ✅ *(widened in v1.2)* |
 | 4 | Only `core/context/resolver/` may reference the resolver bundle path | FR-2.6f | ✅ *(added in v1.1)* |
 | 5 | **No module outside `core/context/` may name a concrete related-context implementation** — construction goes through the factory | **FR-2.6e** | ✅ *(added in v1.1)* |
 | 6 | Nothing imports `cli/`; the capability packages do not import each other | The layering in [`design/01-logical-architecture.md`](./design/01-logical-architecture.md) §3 | ❌ |
@@ -293,6 +293,7 @@ Pinned by the first install in feature 001 (walking skeleton), resolved on 2026-
 | `pytest` | 9.1.1 | dev |
 | `import-linter` | 2.15 | dev · structural contracts |
 | `jsonschema` | 4.26.0 | dev · independent report-schema validation (SC-002) |
+| `ipykernel` | 7.3.0 | dev · Jupyter kernel for `notebooks/` explorations; not used by the tool or its tests |
 
 ### Assumptions to test
 
