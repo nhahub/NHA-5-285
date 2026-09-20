@@ -12,7 +12,13 @@ SCHEMA_VERSION = "1.0"
 """Hand-set, never derived from the package version: a patch release must not renumber the schema (02 §4)."""
 
 TOOL_NAME = "emit_finding"
-TOOL_DESCRIPTION = "Report one review finding. This is the ONLY way a finding is recorded; prose is discarded."
+TOOL_DESCRIPTION = (
+    "Record ONE review finding: a single specific problem, at one location in one reviewed file. "
+    "Call this once per problem, as soon as you find it. This call is the only way a finding is recorded — prose in "
+    "your reply is discarded unread. Each call is validated against the change under review: the file must be one of "
+    "the reviewed files, the line range must exist in its new version, and the evidence must point at something this "
+    "review actually has. A rejected call records nothing."
+)
 
 REPORT_SCHEMA_ID = f"https://agentic-review.invalid/schemas/review-report/{SCHEMA_VERSION}.json"
 REPORT_SCHEMA_DESCRIPTION = (
@@ -56,7 +62,15 @@ def inline_refs(schema: dict[str, Any]) -> dict[str, Any]:
 
 
 def tool_schema() -> dict[str, Any]:
-    return inline_refs(FindingDraft.model_json_schema(by_alias=True))
+    """The tool's parameters: generated from ``FindingDraft``, so the model reads the same definition we validate against.
+
+    The model-facing sentence of the type's docstring becomes the schema's description; the paragraph explaining the
+    convention to our own developers does not travel to the provider.
+    """
+    schema = inline_refs(FindingDraft.model_json_schema(by_alias=True))
+    if "description" in schema:
+        schema["description"] = schema["description"].split("\n", 1)[0].strip()
+    return schema
 
 
 def report_schema() -> dict[str, Any]:

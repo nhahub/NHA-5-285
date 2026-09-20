@@ -76,35 +76,62 @@ class WireModel(BaseModel):
 
 
 class CheckEvidence(WireModel):
+    """A check that was executed in this review. Not reachable until feature 002 runs checks."""
+
     _omit_when_none = frozenset({"failing_test"})
 
     kind: Literal["check"]
-    check_id: Literal["tests", "typecheck"]
-    failing_test: Annotated[str | SkipJsonSchema[None], BeforeValidator(_optional_str)] = None
+    check_id: Annotated[
+        Literal["tests", "typecheck"],
+        Field(description="The check whose result shows the problem. Rejected while no checks are run."),
+    ]
+    failing_test: Annotated[
+        str | SkipJsonSchema[None],
+        BeforeValidator(_optional_str),
+        Field(description="Name of the failing test, when one identifies the problem."),
+    ] = None
 
 
 class ContextEvidence(WireModel):
+    """Related code gathered for this review. Not reachable until feature 004 gathers context."""
+
     kind: Literal["context"]
-    file: Annotated[str, Field(min_length=1)]
-    start_line: Annotated[int, Field(ge=1)]
-    end_line: Annotated[int, Field(ge=1)]
+    file: Annotated[str, Field(min_length=1, description="Path of the related file that was gathered.")]
+    start_line: Annotated[int, Field(ge=1, description="First line of the gathered range.")]
+    end_line: Annotated[int, Field(ge=1, description="Last line of the gathered range.")]
 
 
 class DiffEvidence(WireModel):
+    """The usual evidence: the diff you were shown demonstrates the problem."""
+
     _omit_when_none = frozenset({"hunk_index"})
 
     kind: Literal["diff"]
-    file: Annotated[str, Field(min_length=1)]
+    file: Annotated[
+        str,
+        Field(min_length=1, description="A reviewed file whose diff shows the problem; usually the finding's file."),
+    ]
     hunk_index: Annotated[
         int | SkipJsonSchema[None],
         BeforeValidator(_optional_non_negative_int),
-        Field(json_schema_extra={"minimum": 0}),
+        Field(
+            json_schema_extra={"minimum": 0},
+            description="The number i of the '[hunk i]' block you are citing in that file. Omit to cite the file.",
+        ),
     ] = None
 
 
 class UnverifiedEvidence(WireModel):
+    """An honest admission: the finding goes beyond what this review could see."""
+
     kind: Literal["unverified"]
-    reason: Annotated[str, Field(min_length=1)]
+    reason: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="What you could not check here, for example 'callers of this function were not shown'.",
+        ),
+    ]
 
 
 EvidenceRef = Annotated[
@@ -114,18 +141,80 @@ EvidenceRef = Annotated[
 
 
 class FindingDraft(WireModel):
-    """Exactly what the model may emit through ``emit_finding`` (contracts/emit-finding.md)."""
+    """One review finding: a single specific problem, at one location, in one file of the change under review."""
+
+    # This docstring and every field description below travel to the provider inside the generated tool schema
+    # (contracts/emit-finding.md), so they are written for the model: instructions to the caller, not notes to
+    # ourselves. Developer notes belong in comments like this one, which the schema does not carry.
 
     _omit_when_none = frozenset({"rule_id"})
 
-    file: Annotated[str, Field(min_length=1)]
-    start_line: Annotated[int, Field(ge=1)]
-    end_line: Annotated[int, Field(ge=1)]
-    severity: Severity
-    category: Category
-    rationale: Annotated[str, Field(min_length=1)]
-    rule_id: Annotated[str | SkipJsonSchema[None], BeforeValidator(_optional_str)] = None
-    evidence: EvidenceRef
+    file: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Repository-relative path of the reviewed file the problem is in, exactly as the diff shows it.",
+        ),
+    ]
+    start_line: Annotated[
+        int,
+        Field(
+            ge=1,
+            description=(
+                "First line of the problem in the NEW version of the file. Each hunk's '@@ -old +new @@' header gives "
+                "the line number of its first line; count added (+) and context ( ) lines from there."
+            ),
+        ),
+    ]
+    end_line: Annotated[
+        int,
+        Field(ge=1, description="Last line of the problem, at or after startLine. Keep the range as small as possible."),
+    ]
+    severity: Annotated[
+        Severity,
+        Field(
+            description=(
+                "blocking = likely to break behaviour, lose data or open a vulnerability, so do not merge; "
+                "important = a real defect to fix that does not by itself block the merge; "
+                "nit = minor and local. When unsure, choose the lower severity."
+            )
+        ),
+    ]
+    category: Annotated[
+        Category,
+        Field(
+            description=(
+                "The kind of problem: correctness (wrong result), error-handling (errors swallowed, lost or escaping), "
+                "interface-contract (a change callers rely on), test-evidence (behaviour changed without a test), "
+                "security (untrusted input, secrets, missing authorisation), performance (avoidable work), "
+                "maintainability (dead code, unused values, misleading names)."
+            )
+        ),
+    ]
+    rationale: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description=(
+                "One or two sentences: name the symbol involved, say what is wrong and what it causes. "
+                "Do not restate the diff."
+            ),
+        ),
+    ]
+    rule_id: Annotated[
+        str | SkipJsonSchema[None],
+        BeforeValidator(_optional_str),
+        Field(description="Leave unset. No pattern rules are loaded, so any value here is rejected."),
+    ] = None
+    evidence: Annotated[
+        EvidenceRef,
+        Field(
+            description=(
+                "Required. What supports this finding: cite the diff hunk that shows it, or mark the finding "
+                "unverified with the reason you could not check it here."
+            )
+        ),
+    ]
 
     @field_validator("rationale")
     @classmethod

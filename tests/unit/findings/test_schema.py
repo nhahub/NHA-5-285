@@ -21,6 +21,7 @@ ALL_DEGRADATION_CODES = {
     "invalid-model-output",
     "no-tool-call",
     "tool-budget-exhausted",
+    "incomplete-file-coverage",
 }
 
 
@@ -51,11 +52,21 @@ def test_tool_schema_matches_the_contract() -> None:
     assert set(schema["required"]) == {"file", "startLine", "endLine", "severity", "category", "rationale", "evidence"}
     assert schema["properties"]["severity"]["enum"] == ["blocking", "important", "nit"]
     assert len(schema["properties"]["category"]["enum"]) == 7
-    assert schema["properties"]["ruleId"] == {"type": "string"}
+    rule_id = schema["properties"]["ruleId"]
+    assert rule_id["type"] == "string" and "Leave unset" in rule_id["description"]
     arms = schema["properties"]["evidence"]["oneOf"]
     assert sorted(arm["properties"]["kind"]["const"] for arm in arms) == ["check", "context", "diff", "unverified"]
     assert all(arm["additionalProperties"] is False for arm in arms)
     Draft202012Validator.check_schema(schema)
+
+
+def test_every_tool_field_tells_the_model_how_to_fill_it() -> None:
+    # The descriptions are what the provider reads; they are generated from the model, never written in the schema.
+    schema = tool_schema()
+    for name, field in schema["properties"].items():
+        assert field.get("description"), f"{name} has no description"
+    for arm in schema["properties"]["evidence"]["oneOf"]:
+        assert arm.get("description"), f"evidence arm {arm['properties']['kind']['const']} has no description"
 
 
 def test_report_schema_is_versioned_and_valid() -> None:
