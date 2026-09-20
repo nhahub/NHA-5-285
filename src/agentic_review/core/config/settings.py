@@ -1,8 +1,8 @@
 """The `.agentic-review.yml` model (data-model §7, `Docs/design/04-contracts.md` §7).
 
 The whole documented schema is modelled, including sections for capabilities not built yet, so a file written now stays
-valid later (FR-003). Every section forbids unknown keys: a misspelt field must never fall back to its default silently
-(FR-1.2d). There is deliberately no field that could hold a credential (FR-1.3a).
+valid later (FR-1.2d). Every section forbids unknown keys: a misspelt field must never fall back to its default
+silently. There is deliberately no field that could hold a credential (FR-1.3a).
 """
 
 from __future__ import annotations
@@ -71,7 +71,7 @@ class BudgetSettings(_Section):
 class Settings(_Section):
     schema_version: Literal[1] = 1
     scope: ScopeSetting = "working-tree"
-    exclude: list[str] = []  # added to the default exclusion list, never replacing it (FR-008)
+    exclude: list[str] = []  # added to the default exclusion list, never replacing it (FR-3.5)
     context: ContextSettings = ContextSettings()
     checks: ChecksSettings = ChecksSettings()
     agent: AgentSettings = AgentSettings()

@@ -21,7 +21,7 @@ class ReviewedFile:
 
 @dataclass(frozen=True)
 class RunMaterial:
-    """What this run actually showed the model. Finding references are validated against it (FR-013)."""
+    """What this run actually showed the model. Finding references are validated against it (FR-5.6a)."""
 
     reviewed_files: Mapping[str, ReviewedFile]
     check_ids: frozenset[str] = frozenset()

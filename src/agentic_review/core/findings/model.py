@@ -1,4 +1,4 @@
-"""The finding model — what the model may emit, and what the system accepts (data-model §3, FR-014).
+"""The finding model — what the model may emit, and what the system accepts (data-model §3, FR-5.2, FR-5.2a–c).
 
 ``FindingDraft`` is the single definition behind the ``emit_finding`` tool schema, the ``findings`` section of the
 report schema, and call validation (SRS §5: one definition, not two).
@@ -243,7 +243,9 @@ class Finding(FindingDraft):
 
 
 class ToolObservation(WireModel):
-    """The structured result handed back to the model for every tool call (FR-015 / FR-5.9)."""
+    # FR-5.9. No requirement ID in this docstring: WireModel docstrings travel into the JSON schema (FR-5.6a's
+    # tool_schema() generates from FindingDraft only today, so this one doesn't leak yet — keep it that way).
+    """The structured result handed back to the model for every tool call."""
 
     status: Literal["ok", "error", "denied"]
     reason: str | None = None

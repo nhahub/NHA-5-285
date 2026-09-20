@@ -1,4 +1,4 @@
-"""Loading `.agentic-review.yml` — FR-002, FR-003, research R-8, contracts/config.md."""
+"""Loading `.agentic-review.yml` — FR-1.2a–d, research R-8, contracts/config.md."""
 
 from __future__ import annotations
 

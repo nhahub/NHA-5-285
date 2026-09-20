@@ -1,4 +1,4 @@
-"""The JSON report (FR-025). It is serialised from the same ``ReviewReport`` the terminal renders (FR-027)."""
+"""The JSON report (FR-8.2a, FR-10.4b). It is serialised from the same ``ReviewReport`` the terminal renders (FR-10.4a)."""
 
 from __future__ import annotations
 

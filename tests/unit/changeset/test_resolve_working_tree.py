@@ -1,4 +1,4 @@
-"""The working-tree scope against real git repositories — FR-005, FR-007, FR-009, research R-4, R-5."""
+"""The working-tree scope against real git repositories — FR-10.3a, FR-10.3c, spec 001 FR-009, research R-4, R-5."""
 
 from __future__ import annotations
 

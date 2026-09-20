@@ -1,4 +1,4 @@
-"""The verdict, computed in core — never in the command-line layer (FR-023, FR-10.2, research R-17)."""
+"""The verdict, computed in core — never in the command-line layer (FR-10.2, FR-10.4c, research R-17)."""
 
 from __future__ import annotations
 

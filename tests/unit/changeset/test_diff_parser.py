@@ -1,4 +1,4 @@
-"""Parsing git's own output — FR-007, FR-009, research R-5, R-7. Inputs are literal git output."""
+"""Parsing git's own output — FR-10.3c, spec 001 FR-009, research R-5, R-7. Inputs are literal git output."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""The verdict is computed in core — FR-023, research R-17."""
+"""The verdict is computed in core — FR-10.2, FR-10.4c, research R-17."""
 
 from __future__ import annotations
 

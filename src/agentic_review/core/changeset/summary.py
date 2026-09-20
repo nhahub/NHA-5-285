@@ -43,7 +43,8 @@ def summarise(change_set: ChangeSet) -> ChangeSummary:
 
 
 def measure_new_files(change_set: ChangeSet) -> Mapping[str, int]:
-    """Line counts of the version under review, for reviewable files only (FR-013's "inside that file")."""
+    """Line counts of the version under review, for reviewable files only — the line-range check in FR-5.6a call
+    validation (contracts/emit-finding.md)."""
     if change_set.scope.kind != "working-tree":
         raise NotImplementedError(f"measuring the {change_set.scope.kind} scope arrives with User Story 4")
     counts: dict[str, int] = {}

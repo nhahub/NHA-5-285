@@ -1,4 +1,4 @@
-"""Verdict → exit code. The verdict is computed in core; this is only a lookup table (FR-023, FR-10.4c)."""
+"""Verdict → exit code. The verdict is computed in core; this is only a lookup table (FR-10.4c)."""
 
 from __future__ import annotations
 

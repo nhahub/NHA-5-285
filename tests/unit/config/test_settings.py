@@ -1,4 +1,4 @@
-"""The configuration model — data-model §7, FR-002, FR-003, FR-004."""
+"""The configuration model — data-model §7, FR-1.2b–d, FR-1.3a."""
 
 from __future__ import annotations
 

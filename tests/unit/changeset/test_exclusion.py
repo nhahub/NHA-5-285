@@ -1,4 +1,4 @@
-"""Exclusions — FR-008, SC-009, research R-6, contracts/config.md "Default exclusion list"."""
+"""Exclusions — FR-3.5, SC-009, research R-6, contracts/config.md "Default exclusion list"."""
 
 from __future__ import annotations
 

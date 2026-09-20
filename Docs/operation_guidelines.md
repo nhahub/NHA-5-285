@@ -392,7 +392,7 @@ In this order:
 | A clean change still calls the model | "Nothing to review" is not implemented yet | Expected until User Story 4 |
 
 > **Every traceback above is a known gap, not the intended behaviour.** The specification requires a report with exit 2
-> for provider failures (FR-020). It arrives with User Story 2. Tracebacks never contain the key.
+> for provider failures (FR-11.2). It arrives with User Story 2. Tracebacks never contain the key.
 
 ---
 

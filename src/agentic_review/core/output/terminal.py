@@ -1,7 +1,7 @@
-"""The terminal summary (FR-024, contracts/cli.md "Terminal summary").
+"""The terminal summary (FR-8.1b, contracts/cli.md "Terminal summary").
 
 The only module under ``core/`` that imports Rich (import contract 1). ``core/pipeline/`` never imports it; the CLI does.
-Everything shown is read from the ``ReviewReport``; nothing is recomputed here (FR-027).
+Everything shown is read from the ``ReviewReport``; nothing is recomputed here (FR-10.4a).
 """
 
 from __future__ import annotations

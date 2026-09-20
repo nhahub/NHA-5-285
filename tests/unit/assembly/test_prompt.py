@@ -1,4 +1,4 @@
-"""What the model is given — FR-012 (diff never truncated, material statement), research R-15."""
+"""What the model is given — FR-2.5b (diff never truncated, material statement), research R-15."""
 
 from __future__ import annotations
 

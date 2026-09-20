@@ -1,4 +1,4 @@
-"""Terminal and JSON from one report — FR-024, FR-027, contracts/cli.md "Terminal summary"."""
+"""Terminal and JSON from one report — FR-8.1b, FR-10.4a, contracts/cli.md "Terminal summary"."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Call validation against the shape and against this run's material — FR-013, FR-015, gap D-1.
+"""Call validation against the shape and against this run's material — FR-5.6a, FR-5.9, gap D-1.
 
 Reason strings are asserted exactly: contracts/emit-finding.md fixes them so the model can act on them.
 """

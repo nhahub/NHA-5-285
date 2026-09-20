@@ -1,4 +1,4 @@
-"""Binding rules — FR-011, FR-018 / FR-5.10, contracts/emit-finding.md."""
+"""Binding rules — FR-5.7a (default off), FR-5.10, AC-16, contracts/emit-finding.md."""
 
 from __future__ import annotations
 

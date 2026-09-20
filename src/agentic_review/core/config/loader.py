@@ -93,7 +93,7 @@ def _reject_duplicate_keys(node: yaml.Node | None, path: list[str]) -> None:
 
 
 def _ignored_settings(data: dict[str, Any]) -> tuple[str, ...]:
-    """Dotted paths set in the file for capabilities this build does not have (FR-003)."""
+    """Dotted paths set in the file for capabilities this build does not have (FR-1.2d; Docs/design/04-contracts.md §7)."""
     paths: list[str] = []
 
     def leaves(value: Any, prefix: str) -> None:

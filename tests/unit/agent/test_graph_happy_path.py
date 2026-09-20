@@ -1,4 +1,4 @@
-"""The review step on its main path — FR-013, FR-015, FR-018, FR-021; research R-13, R-14, R-16."""
+"""The review step on its main path — FR-5.6a, FR-5.9, FR-5.10, FR-11.3, AC-16; research R-13, R-14, R-16."""
 
 from __future__ import annotations
 

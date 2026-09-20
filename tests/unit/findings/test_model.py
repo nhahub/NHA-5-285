@@ -1,4 +1,4 @@
-"""FindingDraft shape rules — data-model §3, FR-014, AC-15."""
+"""FindingDraft shape rules — data-model §3, FR-5.2, FR-5.2a–c, AC-15."""
 
 from __future__ import annotations
 

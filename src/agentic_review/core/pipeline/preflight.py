@@ -1,6 +1,7 @@
 """Preflight: everything that can stop a run is checked before any change is resolved or any model is called.
 
-Checks run in the order of contracts/cli.md "Preflight messages" and stop at the first failure (FR-001, AC-9).
+Checks run in the order of contracts/cli.md "Preflight messages" and stop at the first failure (FR-9.3 — partial:
+the test-script prerequisite arrives in feature 002 — AC-9).
 Implemented here: 1 (inside a git repository), 2 (configuration valid), 4 (credential available). Checks 3 and 5
 (scope arguments, range base) arrive with User Story 3.
 """

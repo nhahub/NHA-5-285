@@ -1,4 +1,4 @@
-"""FR-030 / research R-3: only ``core/changeset/`` runs git.
+"""FR-10.3c / research R-3: only ``core/changeset/`` runs git.
 
 import-linter sees imports, not subprocess arguments, so this AST check covers the gap: no module outside
 ``core/changeset/`` may call a ``subprocess`` function with the literal ``"git"`` as the first argv element.

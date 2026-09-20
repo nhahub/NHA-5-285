@@ -1,4 +1,4 @@
-"""Credential lookup — FR-004 / FR-1.3a, research R-9, contracts/config.md."""
+"""Credential lookup — FR-1.3a, research R-9, contracts/config.md."""
 
 from __future__ import annotations
 

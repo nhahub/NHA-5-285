@@ -1,4 +1,4 @@
-"""Stage timing: every stage that runs records its duration on every run (FR-029, SRS §8 rule 2).
+"""Stage timing: every stage that runs records its duration on every run (FR-11.3, SRS §8 rule 2).
 
 Durations are recorded, never compared against a latency value (Principle VI).
 """

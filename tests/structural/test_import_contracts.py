@@ -1,4 +1,4 @@
-"""FR-030 / research R-20: the import-linter contracts also fail a plain ``pytest`` run."""
+"""FR-5.8, FR-10.2, AC-10 (partial) / research R-20: the import-linter contracts also fail a plain ``pytest`` run."""
 
 from __future__ import annotations
 

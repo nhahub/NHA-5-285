@@ -1,4 +1,4 @@
-"""The CLI maps a verdict computed in core to an integer — FR-023, contracts/cli.md."""
+"""The CLI maps a verdict computed in core to an integer — FR-10.4c, contracts/cli.md."""
 
 from __future__ import annotations
 

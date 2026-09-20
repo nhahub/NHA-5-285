@@ -101,7 +101,7 @@ class Sampling(ReportModel):
 
 
 class StageDurations(ReportModel):
-    """Milliseconds per stage. Only stages that ran are present (FR-029)."""
+    """Milliseconds per stage. Only stages that ran are present (FR-8.2c, FR-11.3, SRS §8 rule 2)."""
 
     _omit_when_none = frozenset({"assembly", "review"})
 
