@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 import pytest
 from langchain_core.messages import AIMessage
 
-from agentic_review.core.agent.build import LangGraphReviewPort, build_review_port
+from agentic_review.agents.review_port import LangGraphReviewPort, build_review_port
 from agentic_review.core.config.credentials import Credential
 from agentic_review.core.config.settings import AgentSettings
 from agentic_review.core.findings.port import ReviewContext, ReviewedFile, RunMaterial

@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage, ToolMessage
 from agentic_review.core.config.settings import DEFAULT_MODEL
 from agentic_review.core.findings.port import ReviewedFile, RunMaterial
 from agentic_review.core.findings.schema import SCHEMA_VERSION
-from tests.unit.agent.conftest import CONTEXT, PortFactory
+from tests.unit.agents.conftest import CONTEXT, PortFactory
 from tests.support.scripted_chat_model import ai_reply, finding_call, invalid_json_call
 
 

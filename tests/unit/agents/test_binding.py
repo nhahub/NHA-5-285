@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from agentic_review.core.findings.schema import TOOL_DESCRIPTION, TOOL_NAME, tool_schema
-from tests.unit.agent.conftest import CONTEXT, PortFactory
+from tests.unit.agents.conftest import CONTEXT, PortFactory
 from tests.support.scripted_chat_model import ai_reply
 
 

@@ -1,13 +1,17 @@
-"""The pipeline — the only owner of the order of operations (ADR-0001, ADR-0009, contracts/internal-seams.md §1).
+"""The main agent — the only owner of the order of operations (ADR-0001, ADR-0009, ADR-0010).
 
 The order is **declared as a graph** rather than written as statements: one node per phase of SRS §2.1, including
 the phases that are purely deterministic and the three whose capability is not built yet. Each node is a thin
 adapter — it reads ``PipelineRun``, calls one core function, and writes the result back. Nothing worth testing
 lives in a node; it lives in the core function, which imports no framework and is callable on its own (FR-5.8).
 
-This graph is **acyclic**. CF-6's graph, reached through the review port, is the only place a cycle may occur.
-``core/pipeline`` and ``core/agent`` are the only packages that may import LangGraph, and this one may not import a
-provider client (import contracts 3, 3b).
+This graph is **acyclic**. The review reporting agent, reached through ``ReviewPort``, is the only place a cycle
+may occur. It is invoked from the ``review`` node as an ordinary call rather than added as a LangGraph subgraph,
+because the model it binds is not known until ``preflight`` has resolved the credential and settings — so the
+compiled subgraph cannot exist when this graph is built (ADR-0010).
+
+``agents/`` is the only package that may import LangChain, LangGraph or openai; this module may not import a
+provider client (import contracts 3, 3b). See ``contracts/internal-seams.md`` §1.
 
 After preflight, a failure the spec names is recorded as a degradation and the run continues to a report
 (Principle V). Every stage that runs is timed.
@@ -26,7 +30,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from agentic_review import __version__
-from agentic_review.core.agent.build import build_review_port
+from agentic_review.agents.review_port import build_review_port
 from agentic_review.core.assembly.prompt import assemble
 from agentic_review.core.changeset.model import ChangeSet, ScopeRequest
 from agentic_review.core.changeset.resolve import resolve

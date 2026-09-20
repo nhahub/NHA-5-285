@@ -1,4 +1,8 @@
-"""The review step's graph (research R-12, R-13, R-14, R-17, data-model §5).
+"""The review reporting agent — CF-6's graph, the one step that calls a model (research R-12, R-13, R-14, R-17,
+data-model §5, ADR-0010).
+
+A subagent of the main pipeline agent: invoked from its ``review`` node through ``ReviewPort``, never added to it
+as a LangGraph subgraph (ADR-0010 records why). This is the only graph in the system with a cycle.
 
 Four nodes, one per phase: ``call_model`` sends the conversation; ``validate_calls`` validates each tool call in
 order and answers every call with exactly one structured observation; ``record_coverage`` checks which reviewed
@@ -28,7 +32,7 @@ from langchain_core.runnables import Runnable
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from agentic_review.core.agent.accounting import CallAccounting
+from agentic_review.core.review.accounting import CallAccounting
 from agentic_review.core.assembly.prompt import user_message
 from agentic_review.core.findings.model import ToolObservation
 from agentic_review.core.findings.port import ReviewContext

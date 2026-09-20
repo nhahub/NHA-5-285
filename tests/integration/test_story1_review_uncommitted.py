@@ -17,12 +17,12 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from agentic_review.cli.app import app
-from agentic_review.core.agent.build import build_review_port
+from agentic_review.agents.review_port import build_review_port
 from agentic_review.core.findings.report import ReviewReport
 from agentic_review.core.output.json_out import to_json
 from agentic_review.core.output.terminal import render_terminal
-from agentic_review.core.pipeline import run as pipeline_run
-from agentic_review.core.pipeline.run import ReviewRequest, Reviewed, run_review
+from agentic_review.agents import pipeline_agent
+from agentic_review.agents.pipeline_agent import ReviewRequest, Reviewed, run_review
 from tests.support.report_assertions import (
     assert_invariants,
     assert_no_canary,
@@ -147,7 +147,7 @@ def test_cli_review_with_no_options(
     exit_code: int,
 ) -> None:
     model = ScriptedChatModel(script)
-    monkeypatch.setattr(pipeline_run, "build_review_port", _factory(model))
+    monkeypatch.setattr(pipeline_agent, "build_review_port", _factory(model))
     monkeypatch.chdir(repo.root)
     result = CliRunner().invoke(app, ["review"])
     assert result.exit_code == exit_code, result.output

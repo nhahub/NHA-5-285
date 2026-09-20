@@ -78,6 +78,8 @@ flowchart TD
 
 Nine core functions (CF-1…CF-9) map onto seven packages, with the CLI as the only adapter and `core/pipeline/` owning the order.
 
+> **Superseded by ADR-0010.** The framework-bearing modules have since moved out of `core/` into a top-level `agents/` package — `agents/pipeline_agent.py` (main agent), `agents/review_reporting_agent.py` (subagent), `agents/review_port.py` (provider client) — leaving `core/` framework-free. The diagram below shows the pre-ADR-0010 layout.
+
 ```mermaid
 flowchart TD
     CLI["<b>cli/</b> · CF-7 adapter<br/>app.py · exit_codes.py<br/><i>translation only — decides no finding</i>"]
@@ -114,8 +116,8 @@ Five run in CI via import-linter, and all five currently pass:
 |---|---|---|
 | 1 | Only `core/output/` and `cli/` may import Rich | FR-10.4a |
 | 2 | Only `core/changeset/` may import the git layer | CF-1 encapsulation |
-| 3 | No core-function package may import LangChain, LangGraph or openai | FR-5.8 |
-| 3b | `core/pipeline/` may import LangGraph, but never a provider client | FR-5.8 / ADR-0009 |
+| 3 | No package under `core/` may import LangChain, LangGraph or openai — only `agents/` may | FR-5.8 / ADR-0010 |
+| 3b | the pipeline agent may import LangGraph, but never a provider client | FR-5.8 / ADR-0009, ADR-0010 |
 | 6 | Nothing imports `cli/`; capabilities do not import each other | layering |
 
 Contracts **4** and **5** are specified in `technical_stack.md` §4 but not yet written — they arrive with CF-2 (feature 004). Contract 5 guards FR-2.6e, which the SRS calls *"the highest-value structural constraint in this document"*.

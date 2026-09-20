@@ -17,6 +17,7 @@ These records use the same plain-language style as [`agent-harness-design.md`](.
 | [0007](./0007-python-harness-typescript-target.md) | The harness is Python with LangGraph; the reviewed language is TypeScript | **Accepted** |
 | [0008](./0008-agent-runtime-tool-registry-and-termination.md) | The ceiling counts every tool call; termination is the model declining to call one; the tool list is a versioned registry | **Accepted** |
 | [0009](./0009-pipeline-as-declared-graph.md) | The pipeline is a declared graph with one node per phase; the core functions stay framework-free | **Accepted** |
+| [0010](./0010-agents-package-separate-from-core.md) | Agents live in their own package; `core/` is framework-free | **Accepted** |
 
 ## How they relate
 
@@ -31,6 +32,7 @@ flowchart TD
     G["ADR-0007 ✅ Accepted<br/>Python harness, LangGraph in<br/>one step, TypeScript target"]
     H["ADR-0008 ✅ Accepted<br/>Ceiling counts every call ·<br/>termination · tool registry"]
     I["ADR-0009 ✅ Accepted<br/>Pipeline as a declared graph ·<br/>core functions stay framework-free"]
+    J["ADR-0010 ✅ Accepted<br/>agents/ separate from core/ ·<br/>main agent + reporting subagent"]
 
     A -->|"the pipeline owns execution,<br/>so it must decide when"| B
     A -->|"the pipeline checks out and runs<br/>PR code, so it owns the risk"| C
@@ -53,11 +55,13 @@ flowchart TD
 
     I ==>|"amends the form the fixed order<br/>is written in — not who owns it"| A
     I ==>|"widens the framework's confinement<br/>from one package to two"| G
+    J ==>|"renames where those two<br/>modules live — same rule,<br/>now one package, not a list"| I
 
     style F fill:#e8f7e8
     style G fill:#e8f7e8
     style H fill:#e8f7e8
     style I fill:#e8f7e8
+    style J fill:#e8f7e8
     style A fill:#e8eef7
 ```
 
@@ -80,6 +84,7 @@ GitHub integration was deferred to **v3** on 2026-09-08, and v1 was baselined as
 | 0007 — Python harness, TypeScript target | **v1** — it binds from the first line of code, because it decides which language that line is in |
 | 0008 — agent runtime, registry, termination | **v1** for counting, termination, the registry and observations; its execution ruling binds **v2** on the CLI and **v3** on the Action |
 | 0009 — pipeline as a declared graph | **v1** — it changes the shape of the code every later feature is added to, so its cost rises with each stage built imperatively |
+| 0010 — agents separate from core | **v1** — it decides which package every later module is written into |
 
 *Two rows were corrected on 2026-09-14. **0002** previously read "v1 on the CLI, where its prohibition relaxes", which invites an implementer to build the thing FR-4.6 forbids — [ADR-0006](./0006-local-cli-core-action-as-adapter.md) made the relaxation **available**, and v1 declined it. **0005** previously said its fingerprint design "binds v1's local state file"; v1 has no state file (FR-10.5 is v2), but the design binds v1 through a different door. See the correction note in that record.*
 
@@ -114,6 +119,6 @@ ADR-0006 was decided last but changes how the others should be read, so read it 
 | **Superseded** | A later ADR replaced it; the record stays for history |
 | **Deprecated** | No longer relevant, but not replaced by anything |
 
-[ADR-0006](./0006-local-cli-core-action-as-adapter.md), [ADR-0007](./0007-python-harness-typescript-target.md), [ADR-0008](./0008-agent-runtime-tool-registry-and-termination.md) and [ADR-0009](./0009-pipeline-as-declared-graph.md) are **Accepted**. The other five remain **Proposed** — not ratified, and three of them describe gaps in the current requirements rather than decisions the specification already made.
+[ADR-0006](./0006-local-cli-core-action-as-adapter.md), [ADR-0007](./0007-python-harness-typescript-target.md), [ADR-0008](./0008-agent-runtime-tool-registry-and-termination.md), [ADR-0009](./0009-pipeline-as-declared-graph.md) and [ADR-0010](./0010-agents-package-separate-from-core.md) are **Accepted**. The other five remain **Proposed** — not ratified, and three of them describe gaps in the current requirements rather than decisions the specification already made.
 
 [ADR-0009](./0009-pipeline-as-declared-graph.md) is the only record that **amended a Must requirement** rather than filling a gap. FR-5.8 and AC-10 were edited in the same change that accepted it, so the specification and the code agree; the three remaining edits it lists are to the stack and design documents.

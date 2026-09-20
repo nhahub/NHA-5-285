@@ -222,18 +222,18 @@ A scannable rollup of the trailing italic clause on each requirement above. `src
 | FR-007 | FR-10.3c | | `core/changeset/model.py`, `core/changeset/diff_parser.py` |
 | FR-008 | FR-3.5 | | `core/config/settings.py`, `core/changeset/exclusion.py` |
 | FR-009 | *(none — TS/JS-only scope; a project decision, not an SRS Must)* | | `core/changeset/diff_parser.py` |
-| FR-010 | *(none — "nothing to review" outcome; not separately numbered in the SRS)* | | `core/pipeline/run.py`, `core/output/verdict.py` |
-| FR-011 | FR-5.7a, FR-5.1 | | `core/agent/build.py`, `core/agent/graph.py` |
+| FR-010 | *(none — "nothing to review" outcome; not separately numbered in the SRS)* | | `agents/pipeline_agent.py`, `core/output/verdict.py` |
+| FR-011 | FR-5.7a, FR-5.1 | | `agents/review_port.py`, `agents/review_reporting_agent.py` |
 | FR-012 | FR-2.5b | | `core/assembly/prompt.py` |
 | FR-013 | FR-5.6a | | `core/findings/port.py`, `core/findings/validation.py` |
 | FR-014 | FR-5.2, FR-5.2a–c | | `core/findings/model.py` |
 | FR-015 | FR-5.9 | | `core/findings/model.py` |
-| FR-016 | FR-5.6c | | `core/agent/graph.py` |
-| FR-017 | FR-5.7 | turn-by-turn remaining-calls signal — **005** | `core/agent/accounting.py` |
-| FR-018 | FR-5.10 | | `core/agent/build.py`, `core/agent/graph.py` |
+| FR-016 | FR-5.6c | | `agents/review_reporting_agent.py` |
+| FR-017 | FR-5.7 | turn-by-turn remaining-calls signal — **005** | `core/review/accounting.py` |
+| FR-018 | FR-5.10 | | `agents/review_port.py`, `agents/review_reporting_agent.py` |
 | FR-019 | FR-2.5b, FR-11.1 | | `core/assembly/budget.py`, `core/assembly/prompt.py` |
-| FR-020 | FR-11.2 | | `core/agent/graph.py` |
-| FR-021 | FR-11.3 | | `core/agent/accounting.py` |
+| FR-020 | FR-11.2 | | `agents/review_reporting_agent.py` |
+| FR-021 | FR-11.3 | | `core/review/accounting.py` |
 | FR-022 | FR-11.2 | | `core/pipeline/run.py`, `core/findings/report.py` |
 | FR-023 | FR-10.4c | | `core/output/verdict.py`, `cli/exit_codes.py` |
 | FR-024 | FR-8.1b | | `core/output/terminal.py` |

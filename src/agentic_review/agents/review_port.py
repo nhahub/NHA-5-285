@@ -1,6 +1,8 @@
 """Constructing the review port — the LangChain implementation of ``ReviewPort`` (research R-10, R-11).
 
-This package is the only one importing ``langchain_*``, ``langgraph`` or ``openai`` (FR-5.8, import contract 3).
+The provider client lives here and nowhere else: the main agent declares the order, this builds the thing that
+talks to a model (import contract 3b). ``agents/`` is the only package importing ``langchain_*``, ``langgraph``
+or ``openai`` (FR-5.8, import contract 3, ADR-0010).
 """
 
 from __future__ import annotations
@@ -11,7 +13,7 @@ from urllib.parse import urlparse
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from agentic_review.core.agent.graph import build_review_graph, finish, start_run
+from agentic_review.agents.review_reporting_agent import build_review_graph, finish, start_run
 from agentic_review.core.config.credentials import Credential
 from agentic_review.core.config.settings import AgentSettings
 from agentic_review.core.findings.port import ReviewContext, ReviewOutcome

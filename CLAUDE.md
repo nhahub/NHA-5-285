@@ -57,7 +57,7 @@ The split between the SRS and the stack document is deliberate: the SRS says *wh
 
 **One surface-independent core behind thin adapters** (ADR-0006). v1 builds the CLI adapter only; the GitHub Action is v3. An adapter resolves what to review, renders findings, and stores state — **it never decides what counts as a finding** (FR-10.2).
 
-Orchestration is a **fixed pipeline owned by our code**, not by the model (ADR-0001). Nine core-function blocks, `CF-1` through `CF-9`, each owning a disjoint set of requirements. Since ADR-0009 the fixed order is a **declared LangGraph graph** in `core/pipeline/run.py` — one node per phase, including CF-2, CF-3 and CF-8, which are pass-through nodes until their features land:
+Orchestration is a **fixed pipeline owned by our code**, not by the model (ADR-0001). Nine core-function blocks, `CF-1` through `CF-9`, each owning a disjoint set of requirements. Since ADR-0009 the fixed order is a **declared LangGraph graph**, and since ADR-0010 it lives in `agents/pipeline_agent.py` — the **main agent** — one node per phase, including CF-2, CF-3 and CF-8, which are pass-through nodes until their features land:
 
 ```
 preflight (CF-9) → resolve_change_set (CF-1) → parse_and_context (CF-2, stub)
@@ -65,7 +65,9 @@ preflight (CF-9) → resolve_change_set (CF-1) → parse_and_context (CF-2, stub
   → review (CF-6, the only model step) → build_report (CF-5 → CF-7)
 ```
 
-The graph is acyclic. CF-6's own graph, reached through the review port, is the only place a cycle may occur — the repair-turn edge back to `call_model`.
+The graph is acyclic. CF-6's own graph — the **review reporting agent**, `agents/review_reporting_agent.py`, reached through `ReviewPort` — is the only place a cycle may occur: the repair-turn edge back to `call_model`. It is invoked as an ordinary call, **not** added as a LangGraph subgraph, because the model it binds is unknown until `preflight` has run (ADR-0010 records why, so nobody re-derives it).
+
+**Where code goes** (ADR-0010): `agents/` holds anything that declares a graph or builds a provider client; `core/` is framework-free and every module in it is callable as an ordinary function. If you are adding a module, that distinction decides its directory.
 
 Two commands, one core: a `review` command producing findings, and a `regression` command producing a catch rate over a curated defect corpus.
 
@@ -79,7 +81,7 @@ These are the ones that make v2 and v3 additions rather than rewrites. Treat a c
 - **FR-4.6** — the agent cannot trigger check execution. Checks run once per invocation, before the review pass (ADR-0002).
 - **FR-10.3c** — the change set is a files-and-hunks structure independent of how it was resolved. This is the seam the v3 Action adapter substitutes into.
 - **FR-11.2** — a review is produced under *every* failure mode (checks unrunnable, context over budget, provider error, budget exhausted), reporting the degradation. A silent failure is indistinguishable from a clean review.
-- **FR-5.8** *(amended in v1.2 by ADR-0009)* — the agent framework is confined to CF-6 **and the pipeline orchestrator**. No *core-function* package (CF-1 through CF-9) may import LangGraph, and every core function stays callable as an ordinary function without it; the pipeline graph itself must stay acyclic, with CF-6 the only step where a cycle may occur. This is what keeps ADR-0001's "our code owns orchestration" true now that two packages carry the framework instead of one.
+- **FR-5.8** *(amended in v1.2 by ADR-0009, renamed in v1.3 by ADR-0010)* — the agent framework is confined to the **`agents/` package**. **No package under `core/` may import LangGraph, LangChain or openai**, and every core function stays callable as an ordinary function without them; the pipeline graph itself must stay acyclic, with CF-6 the only step where a cycle may occur. This is what keeps ADR-0001's "our code owns orchestration" true now that a framework is in the repository.
 - **FR-2.6g** — the resolver sidecar's absence degrades and reports; it never fails an invocation. An optional prerequisite must not quietly become a required one.
 
 `Docs/agentic-code-review-srs-v1.md` §6 lists sixteen acceptance criteria (AC-1…AC-16; AC-13/14 added in v1.1, AC-15/16 later). AC-5 and AC-7 are flagged as the ones to defend under schedule pressure; AC-8, AC-10 and AC-12 are the cheap structural checks on the constraints above. AC-10's import-contract wording was updated alongside FR-5.8 in v1.2.
@@ -89,7 +91,7 @@ These are the ones that make v2 and v3 additions rather than rewrites. Treat a c
 Summary only — **`Docs/technical_stack.md` is the authority**, and carries the sidecar protocol, repository layout, import contracts, dependency inventory, and the version pins. Decided in **ADR-0007** (Accepted). **The host language is not the target language:** the harness is Python; the code it reviews is TypeScript.
 
 - **Python** with `tree-sitter` bindings as a native extension, distributed as a **PyPI package** with a console entry point (`uv tool install` / `pipx`). OS/Python-version support is a distribution contract.
-- **LangChain** for the provider interface, tool binding (FR-5.6a) and structured output (FR-5.6b); **LangGraph confined to CF-6 and the pipeline orchestrator** (FR-5.8, amended v1.2 by ADR-0009) — every core-function package stays plain Python, callable without the framework. At ceiling zero the review step is a one-node graph, which is what makes FR-5.7's "configuration, not restructuring" literally true.
+- **LangChain** for the provider interface, tool binding (FR-5.6a) and structured output (FR-5.6b); **LangGraph confined to `agents/`** (FR-5.8, amended v1.2 by ADR-0009, renamed v1.3 by ADR-0010) — every package under `core/` stays plain Python, callable without the framework. At ceiling zero the review step is a one-node graph, which is what makes FR-5.7's "configuration, not restructuring" literally true.
 - **A bundled Node resolver sidecar** answers depth-1 module resolution from the TypeScript compiler's own algorithm (FR-2.6f). Started at most once per invocation, shipped as package data, never fetched at review time. Node is a runtime prerequisite for authoritative depth 1 and **never** for installation — its absence degrades and reports (FR-2.6g, AC-12). The sidecar is private to CF-2; nothing outside it may know it exists.
 - **Pydantic** for the finding model, so the type, the JSON Schema (FR-0.4) and the `emit_finding` tool schema come from one definition — SRS §5 requires "one definition, not two".
 - **Typer + Rich** for CF-7, **pytest** for the CF-8 regression corpus.

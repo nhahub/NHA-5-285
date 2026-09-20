@@ -13,7 +13,7 @@ from rich.console import Console
 from agentic_review.cli.exit_codes import EXIT_PREFLIGHT, exit_code_for
 from agentic_review.core.output.terminal import render_terminal
 from agentic_review.core.pipeline.preflight import PreflightFailure
-from agentic_review.core.pipeline.run import ReviewRequest, run_review
+from agentic_review.agents.pipeline_agent import ReviewRequest, run_review
 
 app = typer.Typer(add_completion=False, no_args_is_help=True, help="Review a TypeScript/JavaScript change set.")
 

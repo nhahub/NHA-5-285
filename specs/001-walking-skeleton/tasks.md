@@ -26,7 +26,7 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 ## Rules that apply to every task
 
 - `subprocess` is always called with an argv list and `shell=False`. Only `core/changeset/_git.py` runs git.
-- `langchain_*`, `langgraph` and `openai` are imported only under `core/agent/`. `rich` only in `core/output/terminal.py` and `cli/`.
+- `langchain_*`, `langgraph` and `openai` are imported only under `agents/` (ADR-0010; was `core/agent/`). `rich` only in `core/output/terminal.py` and `cli/`.
 - Placeholders (tool-call ceiling 25 · TBD-8, `budget.maxTokens` 20000 · TBD-3, request timeout 60 s, default model
   pending S-1) carry a `PLACEHOLDER` comment wherever they are defined.
 - No credential value ever reaches stdout, stderr, the report, a log record or an exception message (FR-004, SC-007).
@@ -162,11 +162,11 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ### Implementation for User Story 2
 
-- [ ] T071 [P] [US2] Implement `src/agentic_review/core/agent/provider_errors.py`: `to_degradation(exc, secret) -> Degradation` for `openai.APIError` subclasses and `httpx.HTTPError`, plus `content_filter_degradation()`; details redacted (research R-9, R-10)
-- [ ] T072 [US2] Extend `src/agentic_review/core/agent/accounting.py` with the ceiling: `admit_call()` returning whether the call may be processed, a dropped-call count, and the `denied` observation reason (research R-13)
-- [ ] T073 [US2] Extend `src/agentic_review/core/agent/graph.py`: the conditional edge `process_calls → call_model` taken only when `rejected > 0 and repair_turns == 0 and ceiling not reached`, the repair user message, `turnIndex 1` for repair-turn findings; provider exceptions and `content_filter` caught in `call_model`; completion status and degradations derived at `END` per the state machine of data-model §5 and research R-17 (no-tool-call, ceiling-reached, invalid-model-output, provider-error)
+- [ ] T071 [P] [US2] Implement `src/agentic_review/agents/provider_errors.py`: `to_degradation(exc, secret) -> Degradation` for `openai.APIError` subclasses and `httpx.HTTPError`, plus `content_filter_degradation()`; details redacted (research R-9, R-10)
+- [ ] T072 [US2] Extend `src/agentic_review/core/review/accounting.py` with the ceiling: `admit_call()` returning whether the call may be processed, a dropped-call count, and the `denied` observation reason (research R-13)
+- [ ] T073 [US2] Extend `src/agentic_review/agents/review_reporting_agent.py`: the conditional edge `process_calls → call_model` taken only when `rejected > 0 and repair_turns == 0 and ceiling not reached`, the repair user message, `turnIndex 1` for repair-turn findings; provider exceptions and `content_filter` caught in `call_model`; completion status and degradations derived at `END` per the state machine of data-model §5 and research R-17 (no-tool-call, ceiling-reached, invalid-model-output, provider-error)
 - [ ] T074 [US2] Extend `src/agentic_review/core/assembly/budget.py` and `prompt.py`: `BudgetExhausted(estimated_tokens, limit)`, and `assemble` returns it when the estimate over the whole prompt exceeds `budget.maxTokens` (TBD-3 placeholder), never building a partial diff (FR-019)
-- [ ] T075 [US2] Extend `src/agentic_review/core/pipeline/run.py`: on `BudgetExhausted`, record a `budget-exhausted` degradation (source `CF-4`, redacted detail with estimate and limit), set `budgetHit: true`, skip the review stage, go to output (FR-019, FR-022)
+- [ ] T075 [US2] Extend `src/agentic_review/agents/pipeline_agent.py`: on `BudgetExhausted`, record a `budget-exhausted` degradation (source `CF-4`, redacted detail with estimate and limit), set `budgetHit: true`, skip the review stage, go to output (FR-019, FR-022)
 - [ ] T076 [US2] Extend `src/agentic_review/core/output/terminal.py`: for completion `no-tool-call`, print "No findings. The model made no tool call, so this build cannot tell a change with nothing to report from a model that did not use the finding tool." (research R-16)
 - [ ] T077 [US2] Add `--ceiling N` (integer ≥ 1) to `review` in `src/agentic_review/cli/app.py`, overriding `agent.toolCallCeiling` (contracts/cli.md)
 - [ ] T078 [US2] Run `uv run lint-imports` and `uv run pytest`; fix until green
