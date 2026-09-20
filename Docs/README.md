@@ -50,11 +50,15 @@ flowchart TD
     T -.->|"constrains"| D
     D -.->|"what design cannot<br/>decide alone"| B["DESIGN_BLOCKERS.md"]
     B -.->|"answered by analysis"| S
+    D --> F["specs/001-walking-skeleton/<br/>feature spec, plan, tasks"]
+    F ==>|"implemented by"| Code["src/agentic_review/"]
+    S -.->|"describes what<br/>Code does today"| G["operation_guidelines.md"]
 
     style S fill:#e8f7e8
     style T fill:#eef3fa
     style D fill:#eef3fa
     style B fill:#ffe6e6
+    style Code fill:#eef3fa
 ```
 
 **The three documents an implementer needs** are the specification (what must be true), the stack (what to build it with), and ADR-0007 (why that stack). [`design/`](./design/) sits between those and the code: it decides how the parts fit together, and it may not change what any of the three says. Everything else is background.

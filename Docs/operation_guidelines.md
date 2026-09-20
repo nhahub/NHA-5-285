@@ -477,7 +477,7 @@ scripted stand-in model. Open it in VS Code or Jupyter with this project's `.ven
 | Next phase | Phase 4, User Story 2: provider errors, repair turn, ceiling, budget refusal |
 | Continue implementation | `/speckit-implement` |
 | Rules every change follows | [`.specify/memory/constitution.md`](../.specify/memory/constitution.md) |
-| Commit messages | Conventional Commits with a scope, for example `feat(review): ...`; see `git-mentor/` |
+| Commit messages | Conventional Commits with a scope, for example `feat(review): ...`; see `.claude/skills/git-mentor/` |
 
 ### Change a dependency
 
