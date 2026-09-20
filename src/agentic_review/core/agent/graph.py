@@ -64,7 +64,7 @@ class ReviewState(TypedDict):
     run: ReviewRun
 
 
-def build_graph(
+def build_review_graph(
     bound_model: Runnable[Any, BaseMessage] | BaseChatModel,
     *,
     rate_limit_retry_seconds: float = DEFAULT_RATE_LIMIT_RETRY_SECONDS,

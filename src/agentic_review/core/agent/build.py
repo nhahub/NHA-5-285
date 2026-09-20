@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from agentic_review.core.agent.graph import build_graph, finish, start_run
+from agentic_review.core.agent.graph import build_review_graph, finish, start_run
 from agentic_review.core.config.credentials import Credential
 from agentic_review.core.config.settings import AgentSettings
 from agentic_review.core.findings.port import ReviewContext, ReviewOutcome
@@ -33,7 +33,7 @@ class LangGraphReviewPort:
         # emit_finding is the only tool, and no tool_choice is ever set: the model is never forced to call (FR-5.10).
         # `max_retries` above already covers the provider client's own short-backoff retries; this is the one
         # longer, configurable wait-and-retry on top of that, scoped to a single turn (research R-10).
-        self._graph = build_graph(
+        self._graph = build_review_graph(
             chat_model.bind_tools([emit_finding_tool()]),
             rate_limit_retry_seconds=settings.rate_limit_retry_seconds,
         )

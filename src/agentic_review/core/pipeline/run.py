@@ -201,7 +201,7 @@ def _build_report(state: PipelineState) -> PipelineState:
     return {"run": run}
 
 
-def build_pipeline() -> CompiledStateGraph:
+def build_pipeline_graph() -> CompiledStateGraph:
     """The order of operations, as an object. ``contracts/internal-seams.md`` §1 is what this must agree with."""
     graph = StateGraph(PipelineState)
     graph.add_node("preflight", _preflight)
@@ -225,7 +225,7 @@ def build_pipeline() -> CompiledStateGraph:
     return graph.compile()
 
 
-_PIPELINE = build_pipeline()
+_PIPELINE = build_pipeline_graph()
 
 
 def run_review(
