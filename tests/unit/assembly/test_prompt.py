@@ -65,7 +65,7 @@ def test_material_statement() -> None:
 
 def test_instructions_name_the_only_way_to_report() -> None:
     instructions = _assemble().instructions
-    for phrase in ("emit_finding", "blocking", "important", "nit", "error-handling", "unverified", "without a tool call"):
+    for phrase in ("emit_finding", "blocking", "important", "nit", "error-handling", "unverified", "no tool call"):
         assert phrase in instructions
 
 
