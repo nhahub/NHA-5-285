@@ -1,8 +1,8 @@
 # Structure Review — Agentic Code Review
 
-**Date:** 2026-09-20 · **Branch:** `001-walking-skeleton` · **Status:** Observation, not a decision
+**Date:** 2026-09-20 · **Branch:** `001-walking-skeleton` · **Status:** §1–§7 describe the repository as it was found; **§8's eight items are now done** — see the "Found / Fixed in" column and §10.
 
-A map of what is in this repository today, how the parts relate, and where the same thing is said more than once. This document describes the repository as found. It proposes simplifications in §8 but decides nothing.
+A map of what is in this repository today, how the parts relate, and where the same thing is said more than once. Sections 1–7 are the original audit and are left as written, since the numbers in them (line counts, reference counts, orphan links) are what justified each fix. Where a fix has since changed a number, that is noted rather than silently corrected.
 
 ---
 
@@ -161,7 +161,7 @@ flowchart LR
 
 Grey nodes are pass-throughs for capabilities not yet built. Two conditional edges the seams contract requires — *nothing to review* and *budget exhausted* — are **not** present in either graph; they remain open as tasks T074/T075.
 
-`process_calls` still carries four distinct phases in one node (validate, observe, recompute coverage, decide repair). Splitting it is outstanding work discussed but not done.
+> **Fixed in `refactor(agent): split process_calls into one node per phase`.** CF-6's graph is now four nodes, not two: `call_model → validate_calls → record_coverage → decide_repair`, with the repair-turn cycle moving from `process_calls → call_model` to `decide_repair → call_model`. Behaviour-preserving — same accounting, same messages, same routing logic.
 
 ---
 
@@ -178,7 +178,7 @@ flowchart LR
     style ST fill:#e8f7e8
 ```
 
-207 tests run offline in ~20s; the scripted stand-in model drives the real review graph, and an autouse fixture blocks the network. **3 currently fail**, all from uncommitted local changes that switched `DEFAULT_BASE_URL` to a local Ollama endpoint and rewrote the prompt, against tests still asserting the NVIDIA defaults.
+207 tests run offline in ~20s; the scripted stand-in model drives the real review graph, and an autouse fixture blocks the network. At the time of this audit **3 failed**, all traced to two uncommitted local lines (`DEFAULT_MODEL`/`DEFAULT_BASE_URL` switched to a local Ollama endpoint) plus an unrelated prompt rewrite whose test hadn't been updated to match. The unrelated work was isolated into its own commits (rate-limit retry, field-description rewrite, prompt rewrite — none of them this audit's concern) and its stale test fixed; **the baseline is now 205 passing, 2 failing**, both attributable solely to the two dirty Ollama lines, which are deliberately left uncommitted.
 
 ---
 
@@ -220,7 +220,9 @@ Counts of requirement references by location:
 | **`src/`** | **39** | **33** |
 | **`tests/`** | **6** | **44** |
 
-The bottom two rows are the problem. A developer reading `src/` sees both schemes with no rule about which to use, and the mapping between them exists only as inline asides inside `specs/001/spec.md` (`FR-001 … — *FR-9.3, AC-9*`). There is **no mapping table anywhere**.
+The bottom two rows were the problem. A developer reading `src/` saw both schemes with no rule about which to use, and the mapping between them existed only as inline asides inside `specs/001/spec.md` (`FR-001 … — *FR-9.3, AC-9*`). There was **no mapping table anywhere**.
+
+> **Fixed in `refactor(*): normalise requirement IDs in src/ and tests/ to the SRS scheme`.** `src/` and `tests/` now cite only `FR-x.y`; the one exception (`FR-009`, which has no SRS parent) is always written qualified as `spec 001 FR-009`, never bare. `specs/001-walking-skeleton/spec.md` gained a "Traceability to the SRS" table — the single place the mapping is recorded. `CLAUDE.md` states the rule going forward: a bare `FR-` in code is always an SRS identifier.
 
 ### 7.2 Orphaned and near-orphaned documents
 
@@ -231,9 +233,13 @@ The bottom two rows are the problem. A developer reading `src/` sees both scheme
 | `Docs/Draft/system-analysis/` | 1,995 | Self-referential + 1 from `Docs/README.md` | 10 of 11 links are internal to the cluster |
 | `Docs/Draft/agentic-code-review-srs-ar.md` | 353 | 4 | Arabic translation; goes stale on every catalogue edit, by `CLAUDE.md`'s own admission |
 
+> **Fixed.** `Docs/v1-requirements.md` is deleted; its one referrer (`system-analysis`'s banner) now points at the SRS directly. `DESIGN_REPORT.md` is linked from `Docs/design/README.md`. `system-analysis/`'s asset cluster is collapsed — see §7.3. The Arabic translation carries a staleness warning in its own front matter now, not only in `CLAUDE.md`.
+
 ### 7.3 Overlapping diagram sets
 
 **82 mermaid diagrams** across four locations: `Docs/design/` (30), `Docs/adr/` (28), `Docs/Draft/system-analysis/` (24), `specs/` (6). `system-analysis/assets/domain_model.md` and `Docs/design/02-domain-model.md` model the same domain; `assets/seq_review_pass.md` and `design/03-behaviour.md` describe the same pass.
+
+> **Verified, then resolved differently than it first looked.** A diagram-by-diagram MD5 comparison found the `assets/*.md` duplication was not with `Docs/design/` — those two really are different views (analysis-level UML vs. design-level types and operations; concrete named actors vs. abstract `CF-n` participants), confirming §9's caveat that this needed a real diff before acting. The actual duplication was **within the cluster itself**: all 10 `assets/*.md` files were byte-identical to blocks the parent `system_analysis.md` already embedded. Fixed in `docs: collapse system-analysis/assets into its parent` — the 10 duplicate files are deleted; the embeds and the two genuinely unique assets (`uc_overview.puml` and its `.svg`) stay.
 
 ### 7.4 Stale statements
 
@@ -243,33 +249,65 @@ The bottom two rows are the problem. A developer reading `src/` sees both scheme
 | `CLAUDE.md` §"git-mentor skill" | "untracked and sits at the repository root rather than under `.claude/skills/`" | It is at `.claude/skills/git-mentor/` |
 | `Docs/design/README.md` | "Status: Complete — all six milestones delivered" | Accurate, but written before ADR-0009 changed §8's contract table |
 
+> **Fixed in `docs: bring CLAUDE.md current with the built repository`.** Every row above is corrected, plus several this audit didn't catch: ADR status/reading order missing 0008 and 0009, the withdrawn "10–30 second" latency figure, the AC-1…AC-12 count (now sixteen), and the pipeline diagram itself, which stated the pre-ADR-0009 shape.
+
 ### 7.5 Loose ends
 
 - `scripts/__pycache__/` is on disk; `scripts/make_review_demo.py` is untracked.
 - `Docs/operation_guidelines.md` (527 lines) is untracked — a substantial document at risk of being lost.
 - `.env` is present and correctly gitignored (`.env*` with `!.env.example`).
 
+> **Fixed.** `Docs/operation_guidelines.md`, `scripts/make_review_demo.py`, `.env.example`, `specs/001-walking-skeleton/s1-results.md`, `notebooks/explore_review_flow.ipynb` and this file are committed. `scripts/__pycache__/` remains — it is `.gitignore`d, not tracked, so there was nothing to rescue.
+
 ---
 
 ## 8 · What simplification would look like
 
-Ranked by value over effort. **None of this is done; it is a menu.**
+Ranked by value over effort. **All eight landed** — see the last column and §10.
 
-| # | Action | Effort | Why |
-|---|---|---|---|
-| 1 | **Rewrite `CLAUDE.md`'s "Current state"** to describe the repository that exists, and fix the git-mentor path | Minutes | It currently tells contributors not to run the test suite. Everything else on this list is optional; this is not |
-| 2 | **Pick one requirement ID scheme for `src/` and `tests/`** and add a mapping table where the other is needed | Hours | Removes the only ambiguity that reaches the code |
-| 3 | **Commit or delete `Docs/operation_guidelines.md`** and `scripts/make_review_demo.py` | Minutes | Untracked work is lost work |
-| 4 | **Retire `Docs/v1-requirements.md`** | Low | An unlinked condensation of a normative document is a second place for it to drift |
-| 5 | **Fold `DESIGN_REPORT.md` into `Docs/design/README.md`**, or link it from somewhere | Low | 253 orphaned lines |
-| 6 | **Collapse `Draft/system-analysis/assets/`** into its parent, or into `Docs/design/` where it duplicates | Medium | 11 files, 10 of them linked only by each other |
-| 7 | **Mark the Arabic translation stale in its own front matter**, or drop it | Low | `CLAUDE.md` already says changes leave it stale; the file does not say so itself |
-| 8 | **Split `core/agent/graph.py`'s `process_calls`** into one node per phase | Low | The original request that started this thread; still outstanding |
+| # | Action | Effort | Why | Fixed in |
+|---|---|---|---|---|
+| 1 | **Rewrite `CLAUDE.md`'s "Current state"** to describe the repository that exists, and fix the git-mentor path | Minutes | It currently tells contributors not to run the test suite. Everything else on this list is optional; this is not | `docs: bring CLAUDE.md current with the built repository` |
+| 2 | **Pick one requirement ID scheme for `src/` and `tests/`** and add a mapping table where the other is needed | Hours | Removes the only ambiguity that reaches the code | `refactor(*): normalise requirement IDs in src/ and tests/ to the SRS scheme` |
+| 3 | **Commit or delete `Docs/operation_guidelines.md`** and `scripts/make_review_demo.py` | Minutes | Untracked work is lost work | `docs: commit operation guidelines, structure review, and s1 results` |
+| 4 | **Retire `Docs/v1-requirements.md`** | Low | An unlinked condensation of a normative document is a second place for it to drift | `docs: retire orphaned v1-requirements.md, link DESIGN_REPORT.md` |
+| 5 | **Fold `DESIGN_REPORT.md` into `Docs/design/README.md`**, or link it from somewhere | Low | 253 orphaned lines | same commit — linked, not folded |
+| 6 | **Collapse `Draft/system-analysis/assets/`** into its parent, or into `Docs/design/` where it duplicates | Medium | 11 files, 10 of them linked only by each other | `docs: collapse system-analysis/assets into its parent` — collapsed into the parent; §7.3's update explains why not `Docs/design/` |
+| 7 | **Mark the Arabic translation stale in its own front matter**, or drop it | Low | `CLAUDE.md` already says changes leave it stale; the file does not say so itself | `docs: retire orphaned v1-requirements.md, link DESIGN_REPORT.md` |
+| 8 | **Split `core/agent/graph.py`'s `process_calls`** into one node per phase | Low | The original request that started this thread; still outstanding | `refactor(agent): split process_calls into one node per phase` |
 
-**What should not be touched:** the document authority hierarchy (§3), the nine core functions, the import contracts, and the ADR set. Those are the parts carrying their weight — the layering is what let ADR-0009 be a contained change rather than a rewrite.
+**What was not touched, on purpose:** the document authority hierarchy (§3), the nine core functions, the import contracts, and the ADR set. Those are the parts carrying their weight — the layering is what let ADR-0009 be a contained change rather than a rewrite.
 
 ---
 
 ## 9 · Honest caveats
 
 This review counted lines, links and identifiers; it did not read all 15,152 lines of prose. The redundancy claims in §7.1 and §7.3 are based on document self-descriptions, title overlap and reference counts — a full content diff of `Docs/design/02-domain-model.md` against `Draft/system-analysis/assets/domain_model.md` would be needed before deleting either. The orphan counts in §7.2 are link-based and exact.
+
+> §7.3's follow-up confirms this caveat mattered: the `assets/` vs. `Docs/design/` diff this section called for turned up **no duplication** — the real duplication was inside the `assets/` cluster itself, which a title-overlap read would not have found.
+
+---
+
+## 10 · What landed
+
+Executed as ten commits on `001-walking-skeleton`, in two phases.
+
+**Isolating unrelated work first.** The working tree mixed three things when this cleanup started: the ADR-0009 pipeline-graph change, an in-flight Ollama/prompt experiment, and — discovered only once diffs were inspected hunk by hunk — a third, substantial body of uncommitted work (rate-limit retry, repair-turn file-coverage tracking, and a full rewrite of the finding-model field descriptions and tool description). That third body of work was not this audit's concern, but leaving it tangled with the cleanup would have made every subsequent diff unreviewable. It was split into its own commits first, two real bugs in it were fixed on the way (a `30`-vs-`60` default mismatch, a prompt-rewrite test nobody had updated), and only the two Ollama-specific lines were left deliberately dirty.
+
+**Then the eight items**, each its own commit, verified against the full suite (205 passed / 2 failed baseline, both attributable to those two dirty lines) and the 5 import-linter contracts after every step:
+
+```mermaid
+flowchart TD
+    W["Mixed working tree:<br/>ADR-0009 + Ollama experiment +<br/>undiscovered rate-limit/coverage work"] --> ISO["Isolate: 7 commits<br/>separating three unrelated efforts"]
+    ISO --> BASE["Clean baseline:<br/>205 passed, 2 failed<br/>(both = 2 dirty Ollama lines)"]
+    BASE --> C2["#1 CLAUDE.md rewrite"]
+    BASE --> C4["#2 ID normalisation"]
+    BASE --> C3["#3 #4 #5 #7 orphans + index"]
+    BASE --> C5["#6 assets collapse"]
+    BASE --> C6["#8 graph.py node split"]
+
+    style BASE fill:#e8f7e8
+    style ISO fill:#fff4e0
+```
+
+Nothing in §3's document hierarchy, the nine core functions, the import contracts, or the ADR set changed. The repository's shape is the same; what changed is that it now says what it is.
