@@ -37,6 +37,7 @@ DegradationCode = Literal[
     "invalid-model-output",
     "no-tool-call",
     "tool-budget-exhausted",
+    "incomplete-file-coverage",
 ]
 CoreFunction = Literal["CF-1", "CF-2", "CF-3", "CF-4", "CF-5", "CF-6", "CF-7", "CF-8", "CF-9"]
 Verdict = Literal["findings", "blocking", "no-findings", "no-judgement", "nothing-to-review"]

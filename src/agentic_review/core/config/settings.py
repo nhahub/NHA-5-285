@@ -54,6 +54,7 @@ class AgentSettings(_Section):
     base_url: str = DEFAULT_BASE_URL
     temperature: Annotated[float, Field(ge=0, le=2)] = 0
     request_timeout_seconds: Annotated[int, Field(ge=1)] = 60  # PLACEHOLDER - additive field, plan D-9
+    rate_limit_retry_seconds: Annotated[int, Field(ge=0)] = 60  # how long to wait before retrying a 429
 
     @field_validator("base_url")
     @classmethod

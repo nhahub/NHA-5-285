@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from agentic_review.core.config.settings import Settings
+from agentic_review.core.config.settings import DEFAULT_MODEL, Settings
 
 
 def test_defaults() -> None:
@@ -19,10 +19,11 @@ def test_defaults() -> None:
     assert settings.checks.tests.command is None and settings.checks.tests.timeout_seconds == 120
     assert settings.agent.tool_call_ceiling == 25
     assert settings.agent.investigation_tools is False
-    assert settings.agent.model == "meta/llama-3.3-70b-instruct"
+    assert settings.agent.model == DEFAULT_MODEL
     assert settings.agent.base_url == "https://integrate.api.nvidia.com/v1"
     assert settings.agent.temperature == 0
     assert settings.agent.request_timeout_seconds == 60
+    assert settings.agent.rate_limit_retry_seconds == 60
     assert settings.budget.max_tokens == 20000
 
 
@@ -42,6 +43,7 @@ def _error_locs(data: dict[str, Any]) -> list[tuple[Any, ...]]:
         ({"budget": {"maxTokens": 0}}, ("budget", "maxTokens")),
         ({"agent": {"toolCallCeiling": 0}}, ("agent", "toolCallCeiling")),
         ({"agent": {"temperature": 2.5}}, ("agent", "temperature")),
+        ({"agent": {"rateLimitRetrySeconds": -1}}, ("agent", "rateLimitRetrySeconds")),
         ({"agent": {"baseUrl": "ftp://example.com"}}, ("agent", "baseUrl")),
         ({"checks": {"tests": {"command": []}}}, ("checks", "tests", "command")),
         ({"scope": "everything"}, ("scope",)),

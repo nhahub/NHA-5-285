@@ -31,7 +31,12 @@ class LangGraphReviewPort:
     def __init__(self, settings: AgentSettings, chat_model: BaseChatModel) -> None:
         self._settings = settings
         # emit_finding is the only tool, and no tool_choice is ever set: the model is never forced to call (FR-5.10).
-        self._graph = build_graph(chat_model.bind_tools([emit_finding_tool()]))
+        # `max_retries` above already covers the provider client's own short-backoff retries; this is the one
+        # longer, configurable wait-and-retry on top of that, scoped to a single turn (research R-10).
+        self._graph = build_graph(
+            chat_model.bind_tools([emit_finding_tool()]),
+            rate_limit_retry_seconds=settings.rate_limit_retry_seconds,
+        )
         self.provider = urlparse(settings.base_url).hostname or settings.base_url
         self.last_transcript: list[BaseMessage] = []
 
