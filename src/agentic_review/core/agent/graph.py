@@ -1,11 +1,13 @@
 """The review step's graph (research R-12, R-13, R-14, R-17, data-model §5).
 
-``call_model`` sends the conversation; ``process_calls`` validates each tool call in order and answers every call with
-exactly one structured observation. A conditional edge sends the run back to ``call_model`` for **one** repair turn
-when that first pass owed one — a rejected call, or a reviewed file that no call ever named — carrying only what
-went wrong; otherwise the run ends. No checkpointer: state is built fresh for every review (FR-5.1).
+Four nodes, one per phase: ``call_model`` sends the conversation; ``validate_calls`` validates each tool call in
+order and answers every call with exactly one structured observation; ``record_coverage`` checks which reviewed
+files this turn's calls named, cumulative across turns; ``decide_repair`` owes the **one** repair turn (FR-5.6c)
+when the first pass owed one — a rejected call, or a reviewed file that no call ever named — carrying only what went
+wrong, and is where the conditional edge back to ``call_model`` lives. No checkpointer: state is built fresh for
+every review (FR-5.1).
 
-``call_model`` also retries once, after a configurable wait, on a 429 from the provider (FR-020/research R-10's
+``call_model`` also retries once, after a configurable wait, on a 429 from the provider (FR-11.2/research R-10's
 provider-error mapping, narrowed to the one case with a well-known fix: wait). The retry is scoped to **that**
 model call alone — earlier turns already in ``run.messages`` are untouched, so a 429 on a repair turn does not
 repeat the first turn's call, let alone restart the review.
@@ -88,9 +90,9 @@ def build_graph(
         return {"run": run}
 
     def route_after_call(state: ReviewState) -> str:
-        return "end" if state["run"].provider_gave_up else "process_calls"
+        return "end" if state["run"].provider_gave_up else "validate_calls"
 
-    def process_calls(state: ReviewState) -> ReviewState:
+    def validate_calls(state: ReviewState) -> ReviewState:
         run = state["run"]
         reply = run.messages[-1]
         assert isinstance(reply, AIMessage)
@@ -120,20 +122,29 @@ def build_graph(
             run.messages.append(_observation_message(observation, invalid.get("id")))
         run.calls_by_turn.append(calls)
         run.rejected_by_turn.append(rejected)
+        return {"run": run}
 
+    def record_coverage(state: ReviewState) -> ReviewState:
+        run = state["run"]
         # Coverage is cumulative across turns: a file named in an earlier turn counts even if this turn is silent.
         missing = frozenset(run.context.material.reviewed_files) - run.named_files
         run.missing_files_by_turn.append(missing)
+        return {"run": run}
 
+    def decide_repair(state: ReviewState) -> ReviewState:
+        run = state["run"]
+        calls = run.calls_by_turn[-1]
+        rejected = run.rejected_by_turn[-1]
+        missing = run.missing_files_by_turn[-1]
         # A wholly silent turn is the model's (ambiguous, but distinct) "nothing to report" signal — handled by
-        # NO_TOOL_CALL_DETAIL below — not a coverage gap this repair turn exists to close.
+        # NO_TOOL_CALL_DETAIL in finish() below — not a coverage gap this repair turn exists to close.
         if calls and run.accounting.repair_turns < MAX_REPAIR_TURNS and (rejected or missing):
             run.accounting.repair_turns += 1
             run.turn_index += 1
             run.messages.append(_repair_message(rejected, missing))
         return {"run": run}
 
-    def route_after_calls(state: ReviewState) -> str:
+    def route_after_repair(state: ReviewState) -> str:
         run = state["run"]
         # A repair turn was just requested (one message appended, no reply to it processed yet): go collect it.
         # `calls_by_turn` grows by one per processed reply, so this is true for exactly one pass through the edge.
@@ -142,10 +153,14 @@ def build_graph(
 
     graph = StateGraph(ReviewState)
     graph.add_node("call_model", call_model)
-    graph.add_node("process_calls", process_calls)
+    graph.add_node("validate_calls", validate_calls)
+    graph.add_node("record_coverage", record_coverage)
+    graph.add_node("decide_repair", decide_repair)
     graph.set_entry_point("call_model")
-    graph.add_conditional_edges("call_model", route_after_call, {"process_calls": "process_calls", "end": END})
-    graph.add_conditional_edges("process_calls", route_after_calls, {"call_model": "call_model", "end": END})
+    graph.add_conditional_edges("call_model", route_after_call, {"validate_calls": "validate_calls", "end": END})
+    graph.add_edge("validate_calls", "record_coverage")
+    graph.add_edge("record_coverage", "decide_repair")
+    graph.add_conditional_edges("decide_repair", route_after_repair, {"call_model": "call_model", "end": END})
     return graph.compile()
 
 
@@ -202,7 +217,7 @@ def finish(run: ReviewRun) -> tuple[CompletionStatus, list[Degradation]]:
     A rate limit that survived its retry (``provider_gave_up``) only overrides the status when nothing was
     accepted before it happened: a 429 on the repair turn after turn 0's findings were already accepted still
     reports as ``emitted`` — those findings are real — carrying the degradation appended in ``call_model``, not a
-    fabricated completion below that would suppress them (FR-020, research R-10/R-17's documented repair-turn case).
+    fabricated completion below that would suppress them (FR-11.2, research R-10/R-17's documented repair-turn case).
     """
     degradations = list(run.degradations)
     accepted = len(run.accounting.findings)
