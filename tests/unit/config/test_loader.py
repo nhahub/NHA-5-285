@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from agentic_review.core.config.loader import ConfigError, load_settings
+from agentic_review.core.config.settings import DEFAULT_MODEL
 
 
 def _write(tmp_path: Path, text: str) -> Path:
@@ -29,7 +30,7 @@ def test_empty_file_gives_defaults(tmp_path: Path) -> None:
 def test_per_field_merge(tmp_path: Path) -> None:
     loaded = load_settings(_write(tmp_path, "agent:\n  toolCallCeiling: 5\n"), explicit=False)
     assert loaded.settings.agent.tool_call_ceiling == 5
-    assert loaded.settings.agent.model == "meta/llama-3.3-70b-instruct"
+    assert loaded.settings.agent.model == DEFAULT_MODEL
     assert loaded.settings.budget.max_tokens == 20000
 
 
