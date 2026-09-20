@@ -11,7 +11,7 @@ tags: [system-analysis, srs, agentic-review, uml, requirements]
 # Phase 1 Agentic Code Review — System Analysis
 
 > [!IMPORTANT]
-> **Non-normative.** This package analyses the baselined specification, [`agentic-code-review-srs-v1.md`](../../agentic-code-review-srs-v1.md), through its extract [`v1-requirements.md`](../../v1-requirements.md). It adds no requirements. Where the two differ, the SRS wins. Where the analysis finds the SRS ambiguous or incomplete, it raises the point in [§7](#7-analyst-findings-and-open-questions) instead of settling it.
+> **Non-normative.** This package analyses the baselined specification, [`agentic-code-review-srs-v1.md`](../../agentic-code-review-srs-v1.md). It adds no requirements. Where the two differ, the SRS wins. Where the analysis finds the SRS ambiguous or incomplete, it raises the point in [§7](#7-analyst-findings-and-open-questions) instead of settling it.
 
 [//]: # (Requirement, acceptance-criterion and risk identifiers are copied verbatim from SRS v1. Nothing is renumbered, per the Docs README convention.)
 
