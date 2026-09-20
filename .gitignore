@@ -18,3 +18,7 @@ Thumbs.db
 *.tmp
 *.swp
 .env*
+!.env.example
+
+# Jupyter
+.ipynb_checkpoints/

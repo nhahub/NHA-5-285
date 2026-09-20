@@ -7,6 +7,7 @@
 | **[`agentic-code-review-srs-v1.md`](./agentic-code-review-srs-v1.md)** | **The specification for the version being built.** Normative — if you are implementing or reviewing an implementation, this is the document. Currently **v1.1**; §10 records what the design review changed and why. |
 | [`technical_stack.md`](./technical_stack.md) | **What the system is built with** — libraries, protocols, repository layout, and the checks that enforce the seams. Subordinate to the specification: it never relaxes a requirement. |
 | [`adr/`](./adr/) | Architecture decision records. Why the system is shaped the way it is. Start with [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md), then [ADR-0007](./adr/0007-python-harness-typescript-target.md), then the [index](./adr/README.md). |
+| [`operation_guidelines.md`](./operation_guidelines.md) | **How to install, configure, run and troubleshoot the tool, and how to work on it.** Describes what the code does today, not the specification. Non-normative. |
 | [`design/`](./design/) | **How the system is put together** — components, types, behaviour, contracts. Subordinate to both documents above: it introduces no requirement and no library. Start with [the design plan](./design/README.md). |
 
 Places where the analysis hand-off contradicts itself, or stops short of a decision design cannot make alone, are collected in [`DESIGN_BLOCKERS.md`](../DESIGN_BLOCKERS.md) at the repository root, with a response log for the analysis team.
