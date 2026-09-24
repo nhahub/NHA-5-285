@@ -31,6 +31,12 @@ decision the documents do not make stops and reports it (Principle I) — it is 
   pending S-1) carry a `PLACEHOLDER` comment wherever they are defined.
 - No credential value ever reaches stdout, stderr, the report, a log record or an exception message (FR-004, SC-007).
 - Every 📦 type lives in `core/findings/` (data-model.md §1). JSON field names are camelCase aliases of snake_case fields.
+- **Tracing (Phase 9, added 2026-09-24).** Langfuse is optional and sits *alongside* the report, never replacing it
+  (`Docs/technical_stack.md` §6, FR-11.3). Every open task below keeps three things true: nothing it adds to graph
+  state or to a node's input/output carries a secret (the credential and the environment travel only as run
+  context — see commit `452735e`); tracing never changes the report, the exit code or what goes to stdout/stderr
+  (contracts/cli.md); and with no `LANGFUSE_*` keys set, nothing is traced and nothing touches the network (SC-006).
+  A task's **Langfuse:** note says what its change should look like in a trace.
 
 ---
 
@@ -153,23 +159,23 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ### Tests for User Story 2 ⚠️ write first
 
-- [ ] T065 [P] [US2] Write `tests/unit/agent/test_repair_turn.py`: one rejected call → a second model call whose messages are system, user, assistant reply, one `ToolMessage` per call, then the fixed repair user message of contracts/emit-finding.md; the repaired finding has `turnIndex 1`, `repairTurns == 1`, no degradation; a second rejection or a repair reply with no call → `invalid-model-output` (completion `invalid-model-output` if nothing accepted, else `emitted` with the degradation); repair is taken at most once; mixed valid/invalid calls accept the valid ones immediately (FR-016, research R-14)
-- [ ] T066 [P] [US2] Write `tests/unit/agent/test_ceiling.py`: with ceiling 2 and a reply of 4 calls, calls 3–4 get `denied` observations with the reason of contracts/emit-finding.md, findings 1–2 are kept, completion `ceiling-reached`, a `tool-budget-exhausted` degradation records 2 dropped calls; the repair turn consumes no slot but calls inside it do; no repair turn once the ceiling is reached (FR-017, research R-13)
-- [ ] T067 [P] [US2] Write `tests/unit/agent/test_provider_errors.py`: `openai.APIConnectionError`, `APITimeoutError`, a 4xx `APIStatusError`, a 429, `httpx.HTTPError`, and `finish_reason == "content_filter"` each yield completion `provider-error` with a `provider-error` degradation (source `CF-6`) whose detail contains no canary key even when the exception message does; a provider error in the repair turn after accepted findings → `emitted` + `provider-error` degradation; `review()` never raises for these (FR-020, research R-10, R-17)
-- [ ] T068 [P] [US2] Write `tests/unit/agent/test_no_tool_call.py`: a first reply with no tool call → `no-tool-call` (kept from US1); a **repair** reply with no tool call is `RepairFailed` → `invalid-model-output`, never `no-tool-call`; a first reply of only rejected calls is not `no-tool-call` (FR-018, gap D-5, data-model §5)
-- [ ] T069 [P] [US2] Write `tests/unit/assembly/test_budget.py`: an estimate above `budget.maxTokens` returns `BudgetExhausted(estimated_tokens, limit)` and never a truncated `ReviewContext`; an estimate at the limit is accepted (FR-019)
-- [ ] T070 [US2] Write `tests/integration/test_story2_failure_modes.py` covering US2 acceptance scenarios 1–7 through `run_review` and the CLI: provider failure → exit 2 and "No review was performed"; repair success → normal report, empty degradations; repair failure with nothing accepted → `invalid-model-output`, exit 2 (AC-13); no tool call → `no-tool-call`, exit 0, and both outputs carry the D-5 wording; ceiling reached → findings kept, `ceiling-reached`; diff over the limit → `budget-exhausted`, stage keys include `assembly` but not `review`, the stand-in called 0 times, exit 2; accepted findings with no damage → `degradations == []`. Also asserts that the eight outcomes of contracts/review-report.md differ pairwise in (exit, completionStatus, degradation codes) (SC-003). Every report passes the `report_assertions` helpers
+- [X] T065 [P] [US2] Write `tests/unit/agents/test_repair_turn.py`: one rejected call → a second model call whose messages are system, user, assistant reply, one `ToolMessage` per call, then the fixed repair user message of contracts/emit-finding.md; the repaired finding has `turnIndex 1`, `repairTurns == 1`, no degradation; a second rejection or a repair reply with no call → `invalid-model-output` (completion `invalid-model-output` if nothing accepted, else `emitted` with the degradation); repair is taken at most once; mixed valid/invalid calls accept the valid ones immediately (FR-016, research R-14). The code already has the repair loop but caps it at `MAX_REPAIR_TURNS = 5` (`agents/review_reporting_agent.py`), against this task and its own comment: the test pins it to one. **Langfuse:** the repair turn appears as a second `generation` under the review reporting agent, whose input ends with the repair message
+- [X] T066 [P] [US2] Write `tests/unit/agents/test_ceiling.py`: with ceiling 2 and a reply of 4 calls, calls 3–4 get `denied` observations with the reason of contracts/emit-finding.md, findings 1–2 are kept, completion `ceiling-reached`, a `tool-budget-exhausted` degradation records 2 dropped calls; the repair turn consumes no slot but calls inside it do; no repair turn once the ceiling is reached (FR-017, research R-13). **Langfuse:** the denied calls are visible in the `validate_calls` node's output (their `denied` observations), so a trace shows what the ceiling cut
+- [X] T067 [P] [US2] Write `tests/unit/agent/test_provider_errors.py`: `openai.APIConnectionError`, `APITimeoutError`, a 4xx `APIStatusError`, a 429, `httpx.HTTPError`, and `finish_reason == "content_filter"` each yield completion `provider-error` with a `provider-error` degradation (source `CF-6`) whose detail contains no canary key even when the exception message does; a provider error in the repair turn after accepted findings → `emitted` + `provider-error` degradation; `review()` never raises for these (FR-020, research R-10, R-17). **Langfuse:** a failed model call is a `generation` at level `ERROR` whose status message is the redacted detail, never the provider's own message; the canary check extends to tracer payloads (T107's helper)
+- [X] T068 [P] [US2] Write `tests/unit/agents/test_no_tool_call.py`: a first reply with no tool call → `no-tool-call` (kept from US1); a **repair** reply with no tool call is `RepairFailed` → `invalid-model-output`, never `no-tool-call`; a first reply of only rejected calls is not `no-tool-call` (FR-018, gap D-5, data-model §5)
+- [X] T069 [P] [US2] Write `tests/unit/assembly/test_budget.py`: an estimate above `budget.maxTokens` returns `BudgetExhausted(estimated_tokens, limit)` and never a truncated `ReviewContext`; an estimate at the limit is accepted (FR-019). **Langfuse:** the estimate and the limit belong in the `assemble_context` node's output, so an over-budget run is explainable from the trace alone
+- [X] T070 [US2] Write `tests/integration/test_story2_failure_modes.py` covering US2 acceptance scenarios 1–7 through `run_review` and the CLI: provider failure → exit 2 and "No review was performed"; repair success → normal report, empty degradations; repair failure with nothing accepted → `invalid-model-output`, exit 2 (AC-13); no tool call → `no-tool-call`, exit 0, and both outputs carry the D-5 wording; ceiling reached → findings kept, `ceiling-reached`; diff over the limit → `budget-exhausted`, stage keys include `assembly` but not `review`, the stand-in called 0 times, exit 2; accepted findings with no damage → `degradations == []`. Also asserts that the eight outcomes of contracts/review-report.md differ pairwise in (exit, completionStatus, degradation codes) (SC-003). Every report passes the `report_assertions` helpers. **Langfuse:** each scenario also runs under the capturing tracer of T107 and asserts no secret in any payload, and that the trace for a run with no model call (budget exhausted) holds no `generation`
 
 ### Implementation for User Story 2
 
-- [ ] T071 [P] [US2] Implement `src/agentic_review/agents/provider_errors.py`: `to_degradation(exc, secret) -> Degradation` for `openai.APIError` subclasses and `httpx.HTTPError`, plus `content_filter_degradation()`; details redacted (research R-9, R-10)
-- [ ] T072 [US2] Extend `src/agentic_review/core/review/accounting.py` with the ceiling: `admit_call()` returning whether the call may be processed, a dropped-call count, and the `denied` observation reason (research R-13)
-- [ ] T073 [US2] Extend `src/agentic_review/agents/review_reporting_agent.py`: the conditional edge `process_calls → call_model` taken only when `rejected > 0 and repair_turns == 0 and ceiling not reached`, the repair user message, `turnIndex 1` for repair-turn findings; provider exceptions and `content_filter` caught in `call_model`; completion status and degradations derived at `END` per the state machine of data-model §5 and research R-17 (no-tool-call, ceiling-reached, invalid-model-output, provider-error)
-- [ ] T074 [US2] Extend `src/agentic_review/core/assembly/budget.py` and `prompt.py`: `BudgetExhausted(estimated_tokens, limit)`, and `assemble` returns it when the estimate over the whole prompt exceeds `budget.maxTokens` (TBD-3 placeholder), never building a partial diff (FR-019)
-- [ ] T075 [US2] Extend `src/agentic_review/agents/pipeline_agent.py`: on `BudgetExhausted`, record a `budget-exhausted` degradation (source `CF-4`, redacted detail with estimate and limit), set `budgetHit: true`, skip the review stage, go to output (FR-019, FR-022)
-- [ ] T076 [US2] Extend `src/agentic_review/core/output/terminal.py`: for completion `no-tool-call`, print "No findings. The model made no tool call, so this build cannot tell a change with nothing to report from a model that did not use the finding tool." (research R-16)
-- [ ] T077 [US2] Add `--ceiling N` (integer ≥ 1) to `review` in `src/agentic_review/cli/app.py`, overriding `agent.toolCallCeiling` (contracts/cli.md)
-- [ ] T078 [US2] Run `uv run lint-imports` and `uv run pytest`; fix until green
+- [X] T071 [P] [US2] Implement `src/agentic_review/agents/provider_errors.py`: `to_degradation(exc, secret) -> Degradation` for `openai.APIError` subclasses and `httpx.HTTPError`, plus `content_filter_degradation()`; details redacted (research R-9, R-10). **Langfuse:** the same redacted detail is what the failed `generation` carries — one mapping, used for the report and the trace
+- [X] T072 [US2] Extend `src/agentic_review/core/review/accounting.py` with the ceiling: `admit_call()` returning whether the call may be processed, a dropped-call count, and the `denied` observation reason (research R-13)
+- [X] T073 [US2] Extend `src/agentic_review/agents/review_reporting_agent.py`: the conditional edge `decide_repair → call_model` (`process_calls` was split into `validate_calls → record_coverage → decide_repair`) taken only when `rejected > 0 and repair_turns == 0 and ceiling not reached`, the repair user message, `turnIndex 1` for repair-turn findings; provider exceptions and `content_filter` caught in `call_model`; completion status and degradations derived at `END` per the state machine of data-model §5 and research R-17 (no-tool-call, ceiling-reached, invalid-model-output, provider-error). **Langfuse:** keep node names stable — they are the observation names every saved trace filter and dashboard keys on
+- [X] T074 [US2] Extend `src/agentic_review/core/assembly/budget.py` and `prompt.py`: `BudgetExhausted(estimated_tokens, limit)`, and `assemble` returns it when the estimate over the whole prompt exceeds `budget.maxTokens` (TBD-3 placeholder), never building a partial diff (FR-019)
+- [X] T075 [US2] Extend `src/agentic_review/agents/pipeline_agent.py`: on `BudgetExhausted`, record a `budget-exhausted` degradation (source `CF-4`, redacted detail with estimate and limit), set `budgetHit: true`, skip the review stage, go to output (FR-019, FR-022). Skipping is a conditional edge `assemble_context → build_report`, so the graph (and the trace) shows the review node was not run rather than run as a no-op
+- [X] T076 [US2] Extend `src/agentic_review/core/output/terminal.py`: for completion `no-tool-call`, print "No findings. The model made no tool call, so this build cannot tell a change with nothing to report from a model that did not use the finding tool." (research R-16)
+- [X] T077 [US2] Add `--ceiling N` (integer ≥ 1) to `review` in `src/agentic_review/cli/app.py`, overriding `agent.toolCallCeiling` (contracts/cli.md). `ReviewRequest.ceiling` and the override in the `preflight` node already exist; this adds the flag. **Langfuse:** the effective ceiling is trace metadata (T106), so runs can be filtered by it
+- [X] T078 [US2] Run `uv run lint-imports` and `uv run pytest`; fix until green
 
 **Checkpoint**: Stories 1 and 2 both pass. Commit: `feat(review): report every failure mode as a degradation`.
 
@@ -183,8 +189,8 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ### Tests for User Story 3 ⚠️ write first
 
-- [ ] T079 [P] [US3] Write `tests/unit/pipeline/test_preflight.py` (create `tests/unit/pipeline/__init__.py`): checks run in the order of contracts/cli.md and stop at the first failure; `range` without `--base` names `--base`; `--base` with a non-range scope is rejected; an unknown base names the ref; `range` with unborn `HEAD` is refused; an explicit `--config` path that does not exist fails; every message says nothing was reviewed
-- [ ] T080 [US3] Write `tests/integration/test_story3_preflight.py` covering US3 acceptance scenarios 1–5 through the CLI: not a repo (message names the directory), invalid field and unknown field (message names the dotted path), missing credential (names `AGENTIC_REVIEW_API_KEY` and the user-level path), unknown range base (names the ref); each exits 3, stdout is empty even with `--json`, the stand-in model `call_count == 0`, and `resolve` was not called (SC-004)
+- [ ] T079 [P] [US3] Write `tests/unit/pipeline/test_preflight.py` (create `tests/unit/pipeline/__init__.py`): checks run in the order of contracts/cli.md and stop at the first failure; `range` without `--base` names `--base`; `--base` with a non-range scope is rejected; an unknown base names the ref; `range` with unborn `HEAD` is refused; an explicit `--config` path that does not exist fails; every message says nothing was reviewed. `preflight()` now takes `CredentialSources`, not the environment (commit `452735e`)
+- [ ] T080 [US3] Write `tests/integration/test_story3_preflight.py` covering US3 acceptance scenarios 1–5 through the CLI: not a repo (message names the directory), invalid field and unknown field (message names the dotted path), missing credential (names `AGENTIC_REVIEW_API_KEY` and the user-level path), unknown range base (names the ref); each exits 3, stdout is empty even with `--json`, the stand-in model `call_count == 0`, and `resolve` was not called (SC-004). **Langfuse:** a preflight failure still yields one short trace — the `preflight` node, then `END` — whose output is the redacted failure message
 
 ### Implementation for User Story 3
 
@@ -210,7 +216,7 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 ### Implementation for User Story 4
 
 - [ ] T086 [US4] Extend `src/agentic_review/core/changeset/resolve.py` with the `staged` and `range` scopes per research R-4, and `src/agentic_review/core/changeset/summary.py` so `measure_new_files` reads the reviewed version for each scope (`git show :path`, `git show HEAD:path`)
-- [ ] T087 [US4] Extend `src/agentic_review/core/pipeline/run.py`: scope precedence flag → config → default with `was_defaulted` true only when neither named it; configured `exclude` passed to `resolve`; when `reviewable_files` is empty, skip assembly and review and build a `nothing-to-review` report (FR-006, FR-010)
+- [ ] T087 [US4] Extend `src/agentic_review/agents/pipeline_agent.py` (was `core/pipeline/run.py`; moved by ADR-0009/ADR-0010): scope precedence flag → config → default with `was_defaulted` true only when neither named it, and configured `exclude` passed to `resolve` — both **already present** in the `resolve_change_set` node, so verify rather than rebuild; when `reviewable_files` is empty, skip assembly and review and build a `nothing-to-review` report, as a conditional edge `resolve_change_set → build_report` so the graph stays acyclic and the skip is visible (FR-006, FR-010). **Langfuse:** a nothing-to-review trace has no `generation`, and the resolved scope kind is a trace tag (T106)
 - [ ] T088 [US4] Add `--scope working-tree|staged|range` to `review` in `src/agentic_review/cli/app.py`
 - [ ] T089 [US4] Run `uv run lint-imports` and `uv run pytest`; fix until green
 
@@ -231,7 +237,7 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ### Implementation for User Story 5
 
-- [ ] T092 [US5] Implement in `src/agentic_review/cli/app.py`: `normalise_argv(argv)`; `--json [PATH]` choosing streams per contracts/cli.md "Streams" (Rich summary to stderr when JSON goes to stdout); writing the report file; the `schema` command printing `report_schema()` as JSON; the `--version` callback (research R-18, FR-025, FR-028)
+- [ ] T092 [US5] Implement in `src/agentic_review/cli/app.py`: `normalise_argv(argv)`; `--json [PATH]` choosing streams per contracts/cli.md "Streams" (Rich summary to stderr when JSON goes to stdout); writing the report file; the `schema` command printing `report_schema()` as JSON; the `--version` callback (research R-18, FR-025, FR-028). **Langfuse:** the report gains no trace id or URL — that would change the published schema, which needs a spec change first. `schema` and `--version` never initialise tracing
 - [ ] T093 [US5] Run `uv run lint-imports` and `uv run pytest`; fix until green
 
 **Checkpoint**: all five stories pass. Commit: `feat(cli): add JSON report output, schema command and version`.
@@ -240,14 +246,47 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T094 [P] Write `tests/integration/test_edge_cases.py` covering every spec "Edge Cases" bullet: renamed file reviewed under its new path with previous path recorded; deleted, binary and `README.md`/`package.json` listed and not reviewed; running from a subdirectory; findings for an unreviewed file, an out-of-range line, check or context evidence, or a `ruleId` rejected with the fixed reasons; mixed valid/invalid calls in one reply; partial acceptance with a failed repair → `emitted` + degradation; prose with no call discarded; `--json` on preflight failure leaves stdout empty; `context`/`checks` sections accepted, no effect, one stderr notice (FR-031)
+- [ ] T094 [P] Write `tests/integration/test_edge_cases.py` covering every spec "Edge Cases" bullet: renamed file reviewed under its new path with previous path recorded; deleted, binary and `README.md`/`package.json` listed and not reviewed; running from a subdirectory; findings for an unreviewed file, an out-of-range line, check or context evidence, or a `ruleId` rejected with the fixed reasons; mixed valid/invalid calls in one reply; partial acceptance with a failed repair → `emitted` + degradation; prose with no call discarded; `--json` on preflight failure leaves stdout empty; `context`/`checks` sections accepted, no effect, one stderr notice (FR-031). **Langfuse:** every case runs under T107's capturing tracer with the no-secret assertion
 - [ ] T095 Print the ignored-settings notice once to stderr in `src/agentic_review/cli/app.py` from `Reviewed.ignored_settings`, listing the dotted paths set for unbuilt capabilities (FR-003)
-- [ ] T096 Handle unexpected internal errors after preflight in `src/agentic_review/cli/app.py`: one redacted stderr line, the report path if one was written, exit 2, traceback only when `AGENTIC_REVIEW_DEBUG=1` (research R-24), with a test in `tests/unit/cli/test_internal_error.py`
-- [ ] T097 Run the full offline suite with no `AGENTIC_REVIEW_API_KEY` set: `uv run lint-imports` and `uv run pytest` green (SC-006)
-- [ ] T098 Walk quickstart.md group B (B1–B6) by hand in a scratch repository and record any deviation
+- [ ] T096 Handle unexpected internal errors after preflight in `src/agentic_review/cli/app.py`: one redacted stderr line, the report path if one was written, exit 2, traceback only when `AGENTIC_REVIEW_DEBUG=1` (research R-24), with a test in `tests/unit/cli/test_internal_error.py`. Restore the `AGENTIC_REVIEW_DEBUG` lines that commit `06b8342` removed from `.env.example`. **Langfuse:** the trace is still flushed, with the root observation at level `ERROR` and the same redacted one-line message
+- [ ] T097 Run the full offline suite with no `AGENTIC_REVIEW_API_KEY` and no `LANGFUSE_*` keys set: `uv run lint-imports` and `uv run pytest` green (SC-006)
+- [ ] T098 Walk quickstart.md group B (B1–B6) by hand in a scratch repository and record any deviation. **Langfuse:** repeat B1 with the `LANGFUSE_*` keys set and confirm one trace per run appears
 - [ ] T099 [P] Update `specs/README.md`: feature 001 status → implemented (S-1 and SC-001 pending a real key)
-- [ ] T100 **Maintainer, needs a real key:** run `uv run python scripts/s1_tool_calling_probe.py --runs 50 --model meta/llama-3.3-70b-instruct`, read `specs/001-walking-skeleton/s1-results.md`, decide the default model and whether FR-5.6b is pulled forward, and record the one-line summary in `Docs/technical_stack.md` §7 (quickstart C1, research R-21)
-- [ ] T101 **Maintainer, needs a real key:** run quickstart C2 against a public TypeScript repository (SC-001)
+- [ ] T100 **Maintainer, needs a real key:** run `uv run python scripts/s1_tool_calling_probe.py --runs 50 --model meta/llama-3.3-70b-instruct`, read `specs/001-walking-skeleton/s1-results.md`, decide the default model and whether FR-5.6b is pulled forward, and record the one-line summary in `Docs/technical_stack.md` §7 (quickstart C1, research R-21). The existing `s1-results.md` covers only `qwen2.5-coder:7b` (0 tool calls in 50 runs); the planned default has not been probed. **Langfuse:** with keys set, tag the probe's traces `s1` and the model name so failed runs can be read call by call
+- [ ] T101 **Maintainer, needs a real key:** run quickstart C2 against a public TypeScript repository (SC-001). **Langfuse:** keep the trace link with the result
+
+---
+
+## Phase 9: Langfuse tracing (added 2026-09-24)
+
+**Purpose**: an optional trace of every review in Langfuse — one trace per run, one observation per pipeline node, the
+model call as a `generation` with model name and token usage — for debugging and, later, evaluation.
+
+**Authority**: this phase is **outside spec 001's requirements**; no `FR-0NN` asks for it. It is admitted by
+`Docs/technical_stack.md` §6 (a hosted tracing service *alongside* our own record, never the only one; FR-11.3) and
+bounded by §3.9 (the credential is never in the trace). T102 records the library choice where the stack document
+requires it. It can land any time after US1; landing it **before US2** gives the Langfuse notes in Phases 4–8
+something to check against.
+
+**Independent Test**: with the `LANGFUSE_*` keys unset, the suite runs offline and unchanged; with an in-memory span
+exporter in place of the network, a stand-in review produces one trace whose nodes, generation, names and metadata
+match T106, and no payload carries a secret.
+
+### Tests for Phase 9 ⚠️ write first
+
+- [ ] T104 [P] Write `tests/unit/agents/test_tracing.py`: tracing is off (no client built, no handler, no socket opened) when `LANGFUSE_PUBLIC_KEY` or `LANGFUSE_SECRET_KEY` is absent; on when both are set; the mask replaces the provider credential wherever it appears in an observation's input, output or metadata; an exporter or handler that raises never fails the review and never changes its report (FR-11.2)
+- [ ] T107 Extend `tests/integration/test_trace_carries_no_credential.py` into a shared helper (`tests/support/tracer_capture.py`) that later integration tests reuse, and add a run through the **real** Langfuse handler with `Langfuse(span_exporter=InMemorySpanExporter())`: the exported spans hold neither the provider credential nor `LANGFUSE_SECRET_KEY`, and the trace has the shape of T106 (trace name, one span per node that ran, the review reporting agent typed `agent`, the model call typed `generation` with token usage)
+
+### Implementation for Phase 9
+
+- [ ] T102 [P] Record Langfuse in `Docs/technical_stack.md`: §5 dependency inventory (role: optional hosted tracing; swap cost low — confined to `agents/`), §7 pinned version (`langfuse` 4.15.5, installed by commit `06b8342`), and a line in §6 saying it is the hosted service used alongside FR-11.3's own record, which it never replaces
+- [ ] T103 [P] Add import contract 7 to `pyproject.toml` — `cli` and `core` may not import `langfuse`; only `agents/` may — and update the contract count wherever it is stated (`CLAUDE.md`, `Docs/technical_stack.md` §4)
+- [ ] T105 Read the tracing settings the way the credential is read (commit `452735e`): `core/config/` gains a function that keeps only `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` (masked, as `Credential` is), `LANGFUSE_BASE_URL` and `LANGFUSE_TRACING_ENVIRONMENT` from the environment, and returns `None` when either key is missing. It travels to the pipeline as run context (`PipelineDeps`), never as state
+- [ ] T106 Implement `src/agentic_review/agents/tracing.py` and wire it into `run_review`: build the Langfuse client from T105's settings (release = `agentic_review.__version__`, a mask that redacts the provider credential); attach the LangChain `CallbackHandler` to the pipeline invocation; trace name `review-change-set` with tags `cli` and the scope kind, metadata model, provider host, ceiling and completion status; compile the review reporting agent's graph under a distinct name so it is a separate, `agent`-typed node rather than a second anonymous `LangGraph`; set the trace's input to the review request and its output to the verdict and finding counts, not the raw state; `flush()` in a `finally` so a short-lived CLI run never loses its trace. Follow `.claude/skills/langfuse` and fetch the current Langfuse docs before writing it
+- [ ] T108 [P] Document tracing in `Docs/operation_guidelines.md`: how to switch it on (the three `LANGFUSE_*` variables, already in `.env.example`), and plainly that with tracing on, the diff under review and the model's replies are sent to the Langfuse project — a data-egress decision for whoever sets the keys
+- [ ] T109 **Maintainer, needs real keys:** run one review with tracing on, fetch the trace (`npx langfuse-cli`), audit it against the fetched https://langfuse.com/docs/observability/best-practices, fix the gaps, and record the audited trace link and what changed
+
+**Checkpoint**: suite green with and without the in-memory exporter; `uv run lint-imports` passes with contract 7. Commit: `feat(agents): trace reviews to Langfuse when configured`.
 
 ---
 
@@ -265,14 +304,19 @@ flowchart LR
     US1 --> US5["Phase 7<br/>US5"]
     US2 & US3 & US4 & US5 --> P8["Phase 8<br/>Polish"]
     US1 -.->|"T054 script exists"| S1["T100 S-1 run<br/>(maintainer)"]
+    US1 --> P9["Phase 9<br/>Langfuse"]
+    P9 -.->|"recommended before"| US2
 
     style US1 fill:#fff4e0
     style S1 fill:#f2f2f2
+    style P9 fill:#eef4ff
 ```
 
 - **Setup → Foundational → US1** is strictly sequential.
 - **US2–US5 each depend only on US1**, since US1 creates the pipeline and CLI they extend. They touch shared files
-  (`core/pipeline/run.py`, `cli/app.py`), so run them one at a time, in priority order.
+  (`agents/pipeline_agent.py`, `cli/app.py`), so run them one at a time, in priority order.
+- **Phase 9 (Langfuse)** depends only on US1. Doing it before US2 lets every later phase check its **Langfuse:**
+  note as it lands. Order within it: T104, T107 (tests) → T102, T103, T105 → T106 → T108 → T109.
 - **US5's integration test** reuses scenarios from US2 and US4, so it should land after them (it is P5 anyway).
 - **T100 (S-1)** needs only T053–T054. It blocks SC-001 and the default model choice, not any other task.
 
@@ -312,7 +356,7 @@ Task: "Write tests/unit/cli/test_exit_codes.py"
 
 ### Incremental delivery
 
-US2 (honest failures) → US3 (preflight) → US4 (scopes) → US5 (machine output) → Polish. Each phase ends green and is committed on its own.
+Langfuse (Phase 9) → US2 (honest failures) → US3 (preflight) → US4 (scopes) → US5 (machine output) → Polish. Each phase ends green and is committed on its own.
 
 ---
 
@@ -356,6 +400,7 @@ Every FR and SC in spec.md maps to at least one task.
 | SC-007 | T008, T023, every integration test |
 | SC-008 | T023, T048 |
 | SC-009 | T033, T085 |
+| *(no spec 001 requirement)* `Docs/technical_stack.md` §6, §3.9 · FR-11.3 "alongside, never the only record" | T102–T109 (Phase 9, Langfuse) |
 
 ## Notes
 
