@@ -5,13 +5,20 @@
 behind it. What the structure does have a reason for is the shape the model must produce — the emit-finding
 protocol, the line-number rule, the vocabularies and the stop condition — because a reply that ignores those is
 rejected at the call boundary rather than turned into a finding.
+
+**Where the system prompt comes from.** When Langfuse credentials are in the environment, the system prompt is the
+Langfuse-managed prompt ``pr-agent-system-prompt`` (its ``production`` label), so the wording can be iterated on
+without a release. ``INSTRUCTIONS`` below is the fallback: it is used when Langfuse is not configured, and when the
+fetch fails for any reason. A missing or unreachable prompt store never fails a review (FR-11.2 in spirit).
 """
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
+from dataclasses import dataclass
 
-from agentic_review.core.assembly.budget import estimate_tokens
+from agentic_review.core.assembly.budget import BudgetExhausted, estimate_tokens
 from agentic_review.core.changeset.model import ChangedFile, ChangeSet
 from agentic_review.core.config.settings import BudgetSettings
 from agentic_review.core.findings.port import ReviewContext, ReviewedFile, RunMaterial
@@ -96,6 +103,58 @@ later requests for the same session block forever.",
 
 MATERIAL_STATEMENT = "No checks were run. No related context was gathered."
 
+SYSTEM_PROMPT_NAME = "pr-agent-system-prompt"
+"""The Langfuse-managed system prompt. A chat prompt whose system message is the instructions."""
+
+_PROMPT_FETCH_TIMEOUT_SECONDS = 5
+
+
+@dataclass(frozen=True)
+class Instructions:
+    """The system prompt a review uses, and where it came from."""
+
+    text: str
+    source: str
+    """``langfuse:<name>@v<version>``, or ``built-in``."""
+    problem: str | None = None
+    """Why the built-in prompt was used although Langfuse is configured; ``None`` otherwise."""
+
+
+def load_instructions(env: Mapping[str, str], *, name: str = SYSTEM_PROMPT_NAME) -> Instructions:
+    """The Langfuse prompt ``name`` when Langfuse is configured in ``env``, else ``INSTRUCTIONS``. Never raises."""
+    public_key, secret_key = env.get("LANGFUSE_PUBLIC_KEY"), env.get("LANGFUSE_SECRET_KEY")
+    if not public_key or not secret_key:
+        return Instructions(INSTRUCTIONS, "built-in")
+    try:
+        from langfuse import Langfuse  # imported only when configured: a review without Langfuse never loads it
+
+        client = Langfuse(
+            public_key=public_key,
+            secret_key=secret_key,
+            base_url=env.get("LANGFUSE_BASE_URL") or env.get("LANGFUSE_HOST"),
+            tracing_enabled=False,  # this client only reads prompts; tracing is attached separately
+        )
+        prompt = client.get_prompt(
+            name, type="chat", max_retries=1, fetch_timeout_seconds=_PROMPT_FETCH_TIMEOUT_SECONDS
+        )
+        text = _system_text(prompt.prompt)
+    except Exception as error:  # any failure falls back: the prompt store is optional
+        return Instructions(INSTRUCTIONS, "built-in", problem=f"{type(error).__name__}: {error}")
+    return Instructions(text, f"langfuse:{name}@v{prompt.version}")
+
+
+def _system_text(prompt: object) -> str:
+    if isinstance(prompt, str):
+        text = prompt
+    else:
+        assert isinstance(prompt, list)
+        text = "\n\n".join(m["content"] for m in prompt if m.get("role") == "system" and m.get("content"))
+    if not text.strip():
+        raise ValueError("the prompt has no system message")
+    # The stored text was copied from this module's source, so its ``\``-newline line continuations came with it;
+    # join them the way Python would have, so the model sees the same text as INSTRUCTIONS.
+    return text.replace("\\\n", "")
+
 
 def prompt_text(instructions: str, material_statement: str, diff_section: str) -> str:
     """The full text sent to the model: the system message, then the user message. The budget is estimated over it."""
@@ -123,8 +182,23 @@ def _diff_section(change_set: ChangeSet) -> str:
     return "\n\n".join(blocks)
 
 
-def assemble(change_set: ChangeSet, line_counts: Mapping[str, int], budget: BudgetSettings) -> ReviewContext:
+def assemble(
+    change_set: ChangeSet,
+    line_counts: Mapping[str, int],
+    budget: BudgetSettings,
+    instructions: str | None = None,
+) -> ReviewContext | BudgetExhausted:
+    """``instructions`` overrides the system prompt; by default it is loaded as ``load_instructions`` describes.
+
+    The whole prompt, or ``BudgetExhausted`` when its estimate exceeds ``budget.maxTokens`` — never a part of it
+    (FR-2.5b, FR-11.2).
+    """
+    if instructions is None:
+        instructions = load_instructions(os.environ).text
     diff_section = _diff_section(change_set)
+    estimated = estimate_tokens(prompt_text(instructions, MATERIAL_STATEMENT, diff_section))
+    if estimated > budget.max_tokens:
+        return BudgetExhausted(estimated_tokens=estimated, limit=budget.max_tokens)
     material = RunMaterial(
         reviewed_files={
             f.path: ReviewedFile(line_count=line_counts[f.path], hunk_count=len(f.hunks))
@@ -132,9 +206,9 @@ def assemble(change_set: ChangeSet, line_counts: Mapping[str, int], budget: Budg
         }
     )
     return ReviewContext(
-        instructions=INSTRUCTIONS,
+        instructions=instructions,
         material_statement=MATERIAL_STATEMENT,
         diff_section=diff_section,
-        estimated_tokens=estimate_tokens(prompt_text(INSTRUCTIONS, MATERIAL_STATEMENT, diff_section)),
+        estimated_tokens=estimated,
         material=material,
     )

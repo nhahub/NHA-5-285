@@ -29,7 +29,14 @@ def _block_network(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture(autouse=True)
 def _isolate_environment(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory) -> None:
     home = tmp_path_factory.mktemp("userhome")
-    for name in ("AGENTIC_REVIEW_API_KEY", "AGENTIC_REVIEW_DEBUG", "XDG_CONFIG_HOME", "NO_COLOR"):
+    for name in (
+        "AGENTIC_REVIEW_API_KEY",
+        "AGENTIC_REVIEW_DEBUG",
+        "XDG_CONFIG_HOME",
+        "NO_COLOR",
+        "LANGFUSE_PUBLIC_KEY",  # with these set, the system prompt would be fetched from Langfuse
+        "LANGFUSE_SECRET_KEY",
+    ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("APPDATA", str(home / "AppData" / "Roaming"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
