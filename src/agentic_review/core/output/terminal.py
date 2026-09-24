@@ -13,6 +13,11 @@ from agentic_review.core.findings.model import DiffEvidence, Finding, Unverified
 from agentic_review.core.findings.report import ReviewReport
 
 EXCLUDED_SHOWN = 10
+NO_TOOL_CALL_LINE = (
+    "No findings. The model made no tool call, so this build cannot tell a change with nothing to report from a "
+    "model that did not use the finding tool."
+)
+"""Research R-16 (gap D-5): a zero-finding run is never presented as a clean review."""
 _REASONS = {
     "deleted": "deleted",
     "binary": "binary",
@@ -61,6 +66,8 @@ def render_terminal(report: ReviewReport, console: Console) -> None:
     for degradation in report.degradations:
         line(f"Degradation [{degradation.source}] {degradation.code}: {degradation.detail}", "yellow")
 
+    if report.run.completion_status == "no-tool-call":
+        line(NO_TOOL_CALL_LINE, "yellow")
     line(_verdict_line(report), "bold")
 
 

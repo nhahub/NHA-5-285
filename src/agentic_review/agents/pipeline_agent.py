@@ -38,7 +38,8 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
 
 from agentic_review import __version__
-from agentic_review.agents.review_port import build_review_port
+from agentic_review.agents.review_port import build_review_port, provider_for
+from agentic_review.core.assembly.budget import BudgetExhausted
 from agentic_review.core.assembly.prompt import assemble
 from agentic_review.core.changeset.model import ChangeSet, ScopeRequest
 from agentic_review.core.changeset.resolve import resolve
@@ -109,6 +110,7 @@ class PipelineRun:
     change_summary: ChangeSummary | None = None
     line_counts: Mapping[str, int] | None = None
     context: ReviewContext | None = None
+    budget_exhausted: BudgetExhausted | None = None  # the estimate and the limit, when the prompt would not fit
     outcome: ReviewOutcome | None = None
     result: PreflightFailure | Reviewed | None = None
 
@@ -181,8 +183,17 @@ def _assemble_context(state: PipelineState) -> PipelineState:
     run = state["run"]
     assert run.checked is not None and run.change_set is not None and run.line_counts is not None
     with run.timer.stage("assembly"):
-        run.context = assemble(run.change_set, run.line_counts, run.checked.loaded.settings.budget)
+        assembled = assemble(run.change_set, run.line_counts, run.checked.loaded.settings.budget)
+    if isinstance(assembled, BudgetExhausted):
+        run.budget_exhausted = assembled
+    else:
+        run.context = assembled
     return {"run": run}
+
+
+def _route_after_assembly(state: PipelineState) -> str:
+    # Over budget, the review node is skipped, not run as a no-op: the graph (and a trace) shows it did not run.
+    return "skip_review" if state["run"].budget_exhausted is not None else "review"
 
 
 # CF-6 · the only step that calls a model, and the only graph with a cycle
@@ -224,22 +235,39 @@ def _credential_lost(agent: AgentSettings) -> ReviewOutcome:
 
 
 # CF-5 → CF-7 · canonical findings, then the one report both renderers share
+def _budget_exhausted_degradation(exhausted: BudgetExhausted) -> Degradation:
+    """No secret can be in it: it is built from two integers (FR-11.2, research R-15)."""
+    detail = (
+        f"The assembled prompt is an estimated {exhausted.estimated_tokens} tokens, over the budget.maxTokens limit "
+        f"of {exhausted.limit}. Nothing was sent to the model: the diff is never truncated to fit."
+    )
+    return Degradation(source="CF-4", code="budget-exhausted", detail=detail)
+
+
 def _build_report(state: PipelineState) -> PipelineState:
     run = state["run"]
-    assert run.checked is not None and run.agent is not None and run.outcome is not None
+    assert run.checked is not None and run.agent is not None
     outcome = run.outcome
-    degradations = list(outcome.degradations)  # already redacted by the review node, the one holder of the secret
+    if outcome is not None:
+        completion = outcome.completion_status
+        degradations = list(outcome.degradations)  # already redacted by the review node, the one holder of the secret
+        provider = outcome.provider
+    else:  # no review ran: only the budget can have stopped it here
+        assert run.budget_exhausted is not None
+        completion = "budget-exhausted"
+        degradations = [_budget_exhausted_degradation(run.budget_exhausted)]
+        provider = provider_for(run.agent.base_url)
 
     def report(output_ms: int) -> ReviewReport:
         return build_report(
             change_summary=run.change_summary,
-            completion=outcome.completion_status,
+            completion=completion,
             outcome=outcome,
             degradations=degradations,
             agent=run.agent,
-            provider=outcome.provider,
+            provider=provider,
             budget_limit=run.checked.loaded.settings.budget.max_tokens,
-            budget_hit=False,
+            budget_hit=run.budget_exhausted is not None,
             started_at=run.started_at,
             duration_ms=max(0, round((run.clock() - run.run_started) * 1000)),
             stage_durations_ms={**run.timer.durations_ms, "output": output_ms},
@@ -273,7 +301,9 @@ def build_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("parse_and_context", "execute_checks")
     graph.add_edge("execute_checks", "load_patterns")
     graph.add_edge("load_patterns", "assemble_context")
-    graph.add_edge("assemble_context", "review_agent")
+    graph.add_conditional_edges(
+        "assemble_context", _route_after_assembly, {"review": "review_agent", "skip_review": "build_report"}
+    )
     graph.add_edge("review_agent", "build_report")
     graph.add_edge("build_report", END)
     return graph.compile()
