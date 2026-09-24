@@ -7,8 +7,15 @@ lives in a node; it lives in the core function, which imports no framework and i
 
 This graph is **acyclic**. The review reporting agent, reached through ``ReviewPort``, is the only place a cycle
 may occur. It is invoked from the ``review`` node as an ordinary call rather than added as a LangGraph subgraph,
-because the model it binds is not known until ``preflight`` has resolved the credential and settings — so the
-compiled subgraph cannot exist when this graph is built (ADR-0010).
+because the model it binds is not known until ``preflight`` has resolved the settings — so the compiled subgraph
+cannot exist when this graph is built (ADR-0010).
+
+**Graph state carries no secret.** Every tracer attached to a graph receives each node's input and output state and
+ships it serialised, so the process environment and the provider credential are never state. ``run_review`` keeps
+only where a credential may be found (``CredentialSources``) and passes it as LangGraph's run-scoped ``context``
+(``PipelineDeps``), which nodes read and callbacks do not see; the credential is looked up by the ``review`` node
+and handed straight to the model client, and exists nowhere else.
+``tests/integration/test_trace_carries_no_credential.py`` holds this.
 
 ``agents/`` is the only package that may import LangChain, LangGraph or openai; this module may not import a
 provider client (import contracts 3, 3b). See ``contracts/internal-seams.md`` §1.
@@ -21,13 +28,14 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict
 
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.runtime import Runtime
 
 from agentic_review import __version__
 from agentic_review.agents.review_port import build_review_port
@@ -35,11 +43,17 @@ from agentic_review.core.assembly.prompt import assemble
 from agentic_review.core.changeset.model import ChangeSet, ScopeRequest
 from agentic_review.core.changeset.resolve import resolve
 from agentic_review.core.changeset.summary import measure_new_files, summarise
-from agentic_review.core.config.credentials import Credential
+from agentic_review.core.config.credentials import (
+    Credential,
+    CredentialProblem,
+    CredentialSources,
+    credential_sources,
+    find_credential,
+)
 from agentic_review.core.config.redact import redact
 from agentic_review.core.config.settings import AgentSettings
 from agentic_review.core.findings.port import ReviewContext, ReviewOutcome, ReviewPort
-from agentic_review.core.findings.report import ChangeSummary, ReviewReport, ScopeKind
+from agentic_review.core.findings.report import ChangeSummary, Degradation, ReviewReport, ScopeKind
 from agentic_review.core.output.build import build_report
 from agentic_review.core.pipeline.preflight import PreflightFailure, PreflightOk, preflight
 from agentic_review.core.pipeline.timing import StageTimer
@@ -67,15 +81,24 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+@dataclass(frozen=True)
+class PipelineDeps:
+    """What the nodes use but never write: LangGraph's run-scoped ``context``, which tracers do not see."""
+
+    credentials: CredentialSources
+    port_factory: PortFactory
+
+
 @dataclass
 class PipelineRun:
-    """Everything the nodes read and write — one mutable object, as CF-6's ``ReviewRun`` is for the review step."""
+    """Everything the nodes read and write — one mutable object, as CF-6's ``ReviewRun`` is for the review step.
+
+    Never holds a secret: this is what a tracer serialises as every node's input and output.
+    """
 
     request: ReviewRequest
-    env: Mapping[str, str]
     clock: Callable[[], float]
     now: Callable[[], datetime]
-    port_factory: PortFactory | None
     timer: StageTimer = field(init=False)
     started_at: str = field(init=False)
     run_started: float = field(init=False)
@@ -100,10 +123,10 @@ class PipelineState(TypedDict):
 
 
 # CF-9 · repository, configuration, credential — the only stage that may stop the run
-def _preflight(state: PipelineState) -> PipelineState:
+def _preflight(state: PipelineState, runtime: Runtime[PipelineDeps]) -> PipelineState:
     run = state["run"]
     with run.timer.stage("preflight"):
-        checked = preflight(run.request.cwd, run.request.config_path, run.env)
+        checked = preflight(run.request.cwd, run.request.config_path, runtime.context.credentials)
     if isinstance(checked, PreflightFailure):
         run.result = checked
         return {"run": run}
@@ -163,13 +186,41 @@ def _assemble_context(state: PipelineState) -> PipelineState:
 
 
 # CF-6 · the only step that calls a model, and the only graph with a cycle
-def _review(state: PipelineState) -> PipelineState:
+def _review(state: PipelineState, runtime: Runtime[PipelineDeps]) -> PipelineState:
     run = state["run"]
     assert run.checked is not None and run.agent is not None and run.context is not None
     with run.timer.stage("review"):
-        factory = run.port_factory or build_review_port
-        run.outcome = factory(run.agent, run.checked.credential).review(run.context)
+        # Looked up here, handed to the model client, and gone when this function returns: never state.
+        credential = find_credential(runtime.context.credentials, run.checked.repo_root)
+        if isinstance(credential, CredentialProblem):
+            run.outcome = _credential_lost(run.agent)
+            return {"run": run}
+        outcome = runtime.context.port_factory(run.agent, credential).review(run.context)
+        secret = credential.reveal()
+        run.outcome = replace(
+            outcome,
+            degradations=tuple(d.model_copy(update={"detail": redact(d.detail, secret)}) for d in outcome.degradations),
+        )
     return {"run": run}
+
+
+def _credential_lost(agent: AgentSettings) -> ReviewOutcome:
+    """Preflight found a credential; by the time the review started it could no longer be read (FR-11.2)."""
+    detail = "The provider credential found at preflight could no longer be read, so nothing was sent to the model."
+    return ReviewOutcome(
+        findings=(),
+        completion_status="provider-error",
+        degradations=(Degradation(source="CF-9", code="provider-error", detail=detail),),
+        tool_calls_total=0,
+        tool_calls_emission=0,
+        tool_calls_investigation=0,
+        repair_turns=0,
+        tokens_in=None,
+        tokens_out=None,
+        model=agent.model,
+        provider="",
+        temperature=agent.temperature,
+    )
 
 
 # CF-5 → CF-7 · canonical findings, then the one report both renderers share
@@ -177,8 +228,7 @@ def _build_report(state: PipelineState) -> PipelineState:
     run = state["run"]
     assert run.checked is not None and run.agent is not None and run.outcome is not None
     outcome = run.outcome
-    secret = run.checked.credential.reveal()
-    degradations = [d.model_copy(update={"detail": redact(d.detail, secret)}) for d in outcome.degradations]
+    degradations = list(outcome.degradations)  # already redacted by the review node, the one holder of the secret
 
     def report(output_ms: int) -> ReviewReport:
         return build_report(
@@ -207,14 +257,14 @@ def _build_report(state: PipelineState) -> PipelineState:
 
 def build_pipeline_graph() -> CompiledStateGraph:
     """The order of operations, as an object. ``contracts/internal-seams.md`` §1 is what this must agree with."""
-    graph = StateGraph(PipelineState)
+    graph = StateGraph(PipelineState, context_schema=PipelineDeps)
     graph.add_node("preflight", _preflight)
     graph.add_node("resolve_change_set", _resolve_change_set)
     graph.add_node("parse_and_context", _parse_and_context)
     graph.add_node("execute_checks", _execute_checks)
     graph.add_node("load_patterns", _load_patterns)
     graph.add_node("assemble_context", _assemble_context)
-    graph.add_node("review", _review)
+    graph.add_node("review_agent", _review)
     graph.add_node("build_report", _build_report)
 
     graph.set_entry_point("preflight")
@@ -223,8 +273,8 @@ def build_pipeline_graph() -> CompiledStateGraph:
     graph.add_edge("parse_and_context", "execute_checks")
     graph.add_edge("execute_checks", "load_patterns")
     graph.add_edge("load_patterns", "assemble_context")
-    graph.add_edge("assemble_context", "review")
-    graph.add_edge("review", "build_report")
+    graph.add_edge("assemble_context", "review_agent")
+    graph.add_edge("review_agent", "build_report")
     graph.add_edge("build_report", END)
     return graph.compile()
 
@@ -240,7 +290,8 @@ def run_review(
     now: Callable[[], datetime] = utc_now,
     port_factory: PortFactory | None = None,
 ) -> PreflightFailure | Reviewed:
-    run = PipelineRun(request=request, env=env, clock=clock, now=now, port_factory=port_factory)
-    _PIPELINE.invoke({"run": run})
+    run = PipelineRun(request=request, clock=clock, now=now)
+    deps = PipelineDeps(credentials=credential_sources(env), port_factory=port_factory or build_review_port)
+    _PIPELINE.invoke({"run": run}, context=deps)
     assert run.result is not None
     return run.result

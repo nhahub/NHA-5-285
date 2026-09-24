@@ -10,6 +10,7 @@ from agentic_review.core.config.credentials import (
     ENV_VAR,
     Credential,
     CredentialProblem,
+    credential_sources,
     find_credential,
     user_credential_path,
 )
@@ -22,13 +23,13 @@ def test_environment_wins(tmp_path: Path) -> None:
     path = user_credential_path(env)
     path.parent.mkdir(parents=True)
     path.write_text("apiKey: other\n", encoding="utf-8")
-    found = find_credential(env, tmp_path / "repo")
+    found = find_credential(credential_sources(env), tmp_path / "repo")
     assert isinstance(found, Credential)
     assert found.reveal() == SECRET and found.source == "environment" and found.location == ENV_VAR
 
 
 def test_empty_environment_value_is_absent(tmp_path: Path) -> None:
-    assert isinstance(find_credential({ENV_VAR: "", "HOME": str(tmp_path)}, tmp_path / "repo"), CredentialProblem)
+    assert isinstance(find_credential(credential_sources({ENV_VAR: "", "HOME": str(tmp_path)}), tmp_path / "repo"), CredentialProblem)
 
 
 @pytest.mark.parametrize("platform,expected", [
@@ -50,7 +51,7 @@ def test_user_file_is_read(tmp_path: Path) -> None:
     path = user_credential_path(env)
     path.parent.mkdir(parents=True)
     path.write_text(f"apiKey: {SECRET}\n", encoding="utf-8")
-    found = find_credential(env, tmp_path / "repo")
+    found = find_credential(credential_sources(env), tmp_path / "repo")
     assert isinstance(found, Credential)
     assert found.reveal() == SECRET and found.source == "user-config" and found.location == str(path)
 
@@ -61,7 +62,7 @@ def test_user_file_inside_repository_is_refused(tmp_path: Path) -> None:
     path = user_credential_path(env)
     path.parent.mkdir(parents=True)
     path.write_text(f"apiKey: {SECRET}\n", encoding="utf-8")
-    problem = find_credential(env, repo)
+    problem = find_credential(credential_sources(env), repo)
     assert isinstance(problem, CredentialProblem)
     assert "inside the repository" in problem.message
     assert SECRET not in problem.message
@@ -69,7 +70,7 @@ def test_user_file_inside_repository_is_refused(tmp_path: Path) -> None:
 
 def test_missing_names_both_places(tmp_path: Path) -> None:
     env = {"APPDATA": str(tmp_path), "XDG_CONFIG_HOME": str(tmp_path)}
-    problem = find_credential(env, tmp_path / "repo")
+    problem = find_credential(credential_sources(env), tmp_path / "repo")
     assert isinstance(problem, CredentialProblem)
     assert ENV_VAR in problem.message
     assert str(user_credential_path(env)) in problem.message

@@ -40,6 +40,26 @@ class CredentialProblem:
     message: str
 
 
+@dataclass(frozen=True)
+class CredentialSources:
+    """The only part of the process environment the pipeline keeps: where a credential may be found.
+
+    Built once from the environment by ``credential_sources``; the environment itself is not carried further, so
+    nothing else in it can travel with the pipeline.
+    """
+
+    from_env: Credential | None
+    user_file: Path
+
+
+def credential_sources(env: Mapping[str, str]) -> CredentialSources:
+    value = env.get(ENV_VAR)
+    return CredentialSources(
+        from_env=Credential(value, source="environment", location=ENV_VAR) if value else None,
+        user_file=user_credential_path(env),
+    )
+
+
 def user_credential_path(env: Mapping[str, str], *, platform: str = sys.platform) -> Path:
     if platform == "win32":
         appdata = env.get("APPDATA")
@@ -55,12 +75,11 @@ def _home(env: Mapping[str, str]) -> Path:
     return Path(home) if home else Path.home()
 
 
-def find_credential(env: Mapping[str, str], repo_root: Path) -> Credential | CredentialProblem:
-    value = env.get(ENV_VAR)
-    if value:
-        return Credential(value, source="environment", location=ENV_VAR)
+def find_credential(sources: CredentialSources, repo_root: Path) -> Credential | CredentialProblem:
+    if sources.from_env is not None:
+        return sources.from_env
 
-    path = user_credential_path(env)
+    path = sources.user_file
     if path.is_file():
         if _is_within(path, repo_root):
             return CredentialProblem(
