@@ -10,16 +10,21 @@ The other side of this contract is **the model**, which cannot be changed togeth
 ## The tool
 
 - **Name**: `emit_finding`
+- **Declaration**: `emit_finding` in `agents/review_port.py`, a LangChain `@tool` bound with
+  `chat_model.bind_tools([emit_finding])`. Its body is never executed: the review graph's `validate_calls` node answers
+  every call, because validation needs the run's material. *(Changed 2026-09-24 from a hand-built tool dict.)*
 - **Description**: as `TOOL_DESCRIPTION` in `core/findings/schema.py`. It states that one call records one specific
-  problem at one location, that the call is the only way a finding is recorded and prose is discarded unread, and that
-  every call is validated against the change under review, so a rejected call records nothing. *(Reworded during
-  implementation, 2026-09-17: the description and the per-field descriptions are what the provider reads, and the
-  original one sentence left the model to guess the rest. Unmeasured — see the note at the end.)*
+  problem at one location, that several problems mean several calls in the same reply, that the call is the only way a
+  finding is recorded and prose is discarded unread, and that every call is validated on its own against the change
+  under review, so a rejected call records nothing and does not affect the others. It ends with one example call.
+  *(Reworded during implementation, 2026-09-17: the description and the per-field descriptions are what the provider
+  reads, and the original one sentence left the model to guess the rest. Unmeasured — see the note at the end.)*
 - **Parameters**: **generated** from `FindingDraft` (see [data-model.md §3](../data-model.md#3--cf-5--findings)),
-  with `$ref`s inlined (R-11). Each field and each evidence arm also carries a `description` generated from the model,
+  with `$ref`s inlined (R-11), and passed to `@tool` as a JSON-schema `args_schema` — passing `FindingDraft` itself
+  would send snake_case names. Each field and each evidence arm also carries a `description` generated from the model,
   so the field rules the model must follow (line numbers in the new version, the severity rubric, the category list,
-  `ruleId` left unset) reach it with the schema rather than only in the prompt. Types, required fields and enums equal
-  04 §4.1:
+  the evidence kinds, `ruleId` left unset) reach it **only** with the tool, not in the system prompt *(since
+  2026-09-24; the prompt previously repeated them)*. Types, required fields and enums equal 04 §4.1:
 
 ```jsonc
 {
@@ -48,7 +53,8 @@ The other side of this contract is **the model**, which cannot be changed togeth
 *(The `oneOf` arms are shown compressed. The generated schema carries full object schemas with
 `additionalProperties: false` and a `kind` discriminator.)*
 
-**Test obligation**: the parameters sent to the provider equal `inline_refs(FindingDraft.model_json_schema(by_alias=True))`.
+**Test obligation**: the parameters sent to the provider equal `inline_refs(FindingDraft.model_json_schema(by_alias=True))`,
+less the top-level `description`, which LangChain's tool conversion drops in favour of the tool description.
 A hand-edited schema fails the test. Descriptions are therefore edited on the Pydantic model, never in the schema.
 
 > **The wording of the description and of the instructions is unmeasured** (Principle VI). Feature 003's corpus is what
