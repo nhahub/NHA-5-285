@@ -76,8 +76,14 @@ def test_material_statement() -> None:
 
 def test_instructions_name_the_only_way_to_report() -> None:
     instructions = _assemble().instructions
-    for phrase in ("emit_finding", "blocking", "important", "nit", "error-handling", "unverified", "no tool call"):
+    for phrase in ("emit_finding", "one turn", "no tool call"):
         assert phrase in instructions
+
+
+def test_instructions_leave_the_field_rules_to_the_tool() -> None:
+    # Severity, evidence kinds and the example travel with the bound tool (tests/unit/agents/test_binding.py).
+    for phrase in ("# Severity", "# Filling in the fields", "unverified", "hunkIndex"):
+        assert phrase not in INSTRUCTIONS
 
 
 def test_run_material() -> None:

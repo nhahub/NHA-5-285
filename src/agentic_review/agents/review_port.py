@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+from langchain_core.tools import tool
 
 from agentic_review.agents.review_reporting_agent import build_review_graph, finish, start_run
 from agentic_review.core.config.credentials import Credential
@@ -22,11 +23,13 @@ from agentic_review.core.findings.schema import TOOL_DESCRIPTION, TOOL_NAME, too
 MAX_RETRIES = 2  # PLACEHOLDER - provider retry count, labelled per Principle VI (research R-10)
 
 
-def emit_finding_tool() -> dict[str, Any]:
-    return {
-        "type": "function",
-        "function": {"name": TOOL_NAME, "description": TOOL_DESCRIPTION, "parameters": tool_schema()},
-    }
+# The parameters are the generated JSON schema, not FindingDraft itself: LangChain would send a Pydantic
+# args_schema with snake_case names and un-inlined refs, and the model must see the camelCase wire shape (R-11).
+@tool(TOOL_NAME, args_schema=tool_schema(), description=TOOL_DESCRIPTION)
+def emit_finding(**finding: Any) -> str:
+    # Declared for binding only. The review graph never executes it: validate_calls answers every call itself,
+    # because validation needs this run's material (reviewed files, hunk counts), which a tool body cannot see.
+    raise NotImplementedError("emit_finding calls are validated by the review graph, never executed")
 
 
 def provider_for(base_url: str) -> str:
@@ -42,7 +45,7 @@ class LangGraphReviewPort:
         # longer, configurable wait-and-retry on top of that, scoped to a single turn (research R-10).
         # `secret` only redacts provider messages inside the graph; the port keeps no reference to it.
         self._graph = build_review_graph(
-            chat_model.bind_tools([emit_finding_tool()]),
+            chat_model.bind_tools([emit_finding]),
             rate_limit_retry_seconds=settings.rate_limit_retry_seconds,
             secret=secret,
         )

@@ -2,9 +2,11 @@
 
 **The wording below is unmeasured.** Prompt quality is judged only once feature 003's regression corpus exists
 (SRS Appendix A, Principle VI): until then, no claim that one wording reviews better than another has evidence
-behind it. What the structure does have a reason for is the shape the model must produce — the emit-finding
-protocol, the line-number rule, the vocabularies and the stop condition — because a reply that ignores those is
-rejected at the call boundary rather than turned into a finding.
+behind it. What the structure does have a reason for is the shape the model must produce, because a reply that
+ignores it is rejected at the call boundary rather than turned into a finding. The prompt carries only the
+one-turn protocol and the stop condition. How to fill in a call — the line-number rule, the severity and category
+vocabularies, the evidence kinds, an example — travels with the bound ``emit_finding`` tool itself: its description
+is ``TOOL_DESCRIPTION`` and each argument's rules are its schema description on ``FindingDraft``.
 
 **Where the system prompt comes from.** When Langfuse credentials are in the environment, the system prompt is the
 Langfuse-managed prompt ``pr-agent-system-prompt`` (its ``production`` label), so the wording can be iterated on
@@ -29,15 +31,14 @@ of every file under review, and nothing else: no test results, no other files, n
 
 # How to report
 
-You get exactly one turn: there is no later turn in which to report more problems. If you find multiple problems, \
-invoke `emit_finding` multiple times **within this same turn** — one call per problem, all issued together \
-alongside each other, not one now while you wait for a result before issuing the next. For example, three problems \
-means three `emit_finding` calls emitted together in this one turn, never spread across turns and never issued one \
-at a time waiting on a response in between. A tool call is the only thing that is recorded. Any prose you write is \
+Report every problem with the `emit_finding` tool. You get exactly one turn: there is no later turn in which to \
+report more problems. If you find multiple problems, invoke `emit_finding` multiple times **within this same turn** \
+— one call per problem, all issued together, not one now while you wait for a result before issuing the next. For \
+example, three problems means three `emit_finding` calls emitted together in this one turn. Any prose you write is \
 discarded unread, so never describe a problem in text instead of calling the tool.
 
-In this single turn, emit one `emit_finding` call for every problem you find. Only after every finding has been \
-emitted — or if you found nothing worth reporting — reply with your final text message and no tool call.
+Only after every finding has been emitted — or if you found nothing worth reporting — reply with your final text \
+message and no tool call.
 
 # What to report
 
@@ -59,46 +60,7 @@ authorisation or validation step.
 7. `maintainability` — dead code, a computed value never used, a misleading name, logic duplicated from nearby code.
 
 Do not report: formatting or style, preferences with no consequence you can state, code the change did not touch, \
-or praise. Do not restate what the diff does. Report each problem once, in one call, at its root cause rather than \
-at each symptom.
-
-# Severity
-
-- `blocking` — likely to break behaviour, lose data, or open a vulnerability. A reviewer would not merge it.
-- `important` — a real defect or risk to fix, but not on its own a reason to block the merge.
-- `nit` — minor and local; the author may reasonably ignore it.
-
-When you are unsure between two severities, choose the lower one.
-
-# Filling in the fields
-
-- `file`: exactly one of the reviewed paths, copied from the file header in the diff.
-- `startLine` / `endLine`: line numbers in the **new** version of that file. Each hunk is labelled `[hunk i]` and \
-carries its `@@ -old,count +new,count @@` header: the `+` number is the line number of the hunk's first line. Count \
-added (`+`) and context (` `) lines from there; removed (`-`) lines do not exist in the new file and are not counted. \
-Give the smallest range that shows the problem.
-- `rationale`: one or two sentences naming the symbol involved, what is wrong, and what it causes. A short \
-suggested fix is welcome, but the consequence matters more.
-- `evidence`: required, and one of:
-  - `{"kind": "diff", "file": "<reviewed path>", "hunkIndex": <i>}` — the usual case: the labelled hunk you are \
-citing shows the problem.
-  - `{"kind": "unverified", "reason": "<what you could not check here>"}` — when you are inferring beyond what the \
-diff shows, for example about a caller you cannot see.
-- No checks were run and no related context was gathered in this review, so evidence of kind `check` or `context` \
-is rejected. Never set `ruleId`; no rules are loaded.
-
-Each call is validated independently against this change, regardless of how many other calls you make in the same \
-turn. A call naming a file that was not reviewed, a line past the end of that file, or evidence this review does \
-not have is rejected and records nothing — that rejection does not affect your other calls.
-
-# Example of a good call
-
-```json
-{"file": "src/session.ts", "startLine": 42, "endLine": 47, "severity": "blocking", "category": "error-handling",
- "rationale": "The expired-token branch returns before releaseLock() runs, so the session lock is never released and \
-later requests for the same session block forever.",
- "evidence": {"kind": "diff", "file": "src/session.ts", "hunkIndex": 1}}
-```
+or praise. Do not restate what the diff does. Report each problem once.
 """
 
 MATERIAL_STATEMENT = "No checks were run. No related context was gathered."
