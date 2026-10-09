@@ -404,7 +404,7 @@ flowchart TD
     S -->|"ValidationError"| RS["Rejected<br/>one reason per failing field<br/>e.g. severity: Input should be …"]
     S -->|"valid draft"| R["<b>Layer 2 · references</b><br/>against RunMaterial"]
     R -->|"problems"| RR["Rejected<br/>every reference problem, joined"]
-    R -->|"none"| OK(["Accepted(draft)"])
+    R -->|"none"| OK(["Accepted(draft, note)<br/>note set when a ruleId was discarded"])
 
     style OK fill:#e8f7e8
     style RJ fill:#ffe6e6
@@ -434,7 +434,8 @@ flowchart TD
     CX -->|"no, but range not inside"| P6b["evidence: '…' lines a–b were not in the context given"]
     K -->|unverified| UV["nothing to check"]
     D --> RU{"ruleId set?"}
-    RU -->|"yes · rule_ids empty in 001"| P7["ruleId: no pattern rules are loaded … omit ruleId"]
+    RU -->|"yes · rule_ids empty in 001"| P7["ruleId discarded · finding kept<br/>(done before the reference checks)"]
+    RU -->|"yes · rules loaded, not listed"| P7b["ruleId: '…' is not a loaded rule"]
 
     style P1 fill:#ffe6e6
     style P2 fill:#ffe6e6
@@ -444,7 +445,8 @@ flowchart TD
     style P5b fill:#ffe6e6
     style P6 fill:#ffe6e6
     style P6b fill:#ffe6e6
-    style P7 fill:#ffe6e6
+    style P7 fill:#e8f7e8
+    style P7b fill:#ffe6e6
     style UV fill:#e8f7e8
 ```
 
@@ -465,7 +467,9 @@ These strings are part of the contract with the model. They are fixed so the mod
 | Hunk cited in a file with no hunks | `evidence.hunkIndex: '<file>' has no hunks; omit hunkIndex` *(code only — see §13)* |
 | Check evidence, no checks ran | `evidence.kind: no checks were run in this review; cite the diff or mark the finding unverified` |
 | Context evidence, none gathered | `evidence.kind: no related context was gathered in this review; cite the diff or mark the finding unverified` |
-| Rule named, none loaded | `ruleId: no pattern rules are loaded in this review; omit ruleId` |
+| Rule named, rules loaded, not one of them | `ruleId: '<id>' is not a loaded rule` |
+
+A rule named when **none** is loaded is not a rejection *(since 2026-10-09)*: the `ruleId` is discarded, the finding is accepted, and the `ok` observation reads `accepted as f-1; ruleId discarded: no pattern rules are loaded in this review`.
 
 ### 5.4 `ToolObservation` — what goes back for every call 📦
 

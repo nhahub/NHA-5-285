@@ -80,7 +80,8 @@ Every tool call, valid or not, receives exactly one `ToolMessage` whose content 
 {"status": "denied", "reason": "tool-call ceiling of 25 reached; this call was not processed", "content": null}
 ```
 
-`reason` is required whenever `status != "ok"`. When several fields fail, the reasons are joined with `; `, and
+`reason` is required whenever `status != "ok"`. An `ok` observation's `content` may carry a note after the finding id,
+when validation discarded a field (see [Discarded fields](#discarded-fields)). When several fields fail, the reasons are joined with `; `, and
 each is prefixed with its dotted JSON field path.
 
 ## Rejection reasons
@@ -99,7 +100,33 @@ fixed forms, so the model can act on them and tests can assert them:
 | Hunk out of range | `evidence.hunkIndex: '<file>' has hunks 0–<k>` |
 | Check evidence | `evidence.kind: no checks were run in this review; cite the diff or mark the finding unverified` |
 | Context evidence | `evidence.kind: no related context was gathered in this review; cite the diff or mark the finding unverified` |
-| Rule named | `ruleId: no pattern rules are loaded in this review; omit ruleId` |
+| Rule named that is not loaded, with rules loaded *(not reachable in 001)* | `ruleId: '<id>' is not a loaded rule` |
+
+## Discarded fields
+
+*(Changed 2026-10-09. Until then a `ruleId` was a rejection, `ruleId: no pattern rules are loaded in this review; omit
+ruleId`.)*
+
+A `ruleId` sent while **no** pattern rules are loaded is **discarded, and the finding is accepted without it** — it is
+not a rejection. The observation says what was done:
+
+```jsonc
+{"status": "ok", "reason": null, "content": "accepted as f-1; ruleId discarded: no pattern rules are loaded in this review"}
+```
+
+Why this one field is treated differently from every row above:
+
+- **Nothing in the finding depends on it.** A dangling evidence reference makes an unevidenced finding look evidenced
+  (gap D-1), so it must be rejected. A rule label backs no claim: with it removed, the file, lines, rationale and
+  evidence are exactly what the model sent.
+- **There is nothing to correct it to.** With no rules loaded the only valid correction is to leave the field out,
+  which the system can do itself, deterministically. Spending the one repair turn on it cost a whole review in
+  practice: the model sent one well-formed finding with an invented `ruleId`, answered the repair turn in prose, and
+  the run ended with no finding and no judgement.
+- **A dangling label never reaches the report** either way, so FR-6.2a is unaffected.
+
+With rules loaded (feature 003) an unknown `ruleId` **is** still rejected, as in the table above: there the model may
+have meant a real rule, and the repair turn lets it name the right one.
 
 ## The repair turn (FR-016 / FR-5.6c)
 
