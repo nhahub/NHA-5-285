@@ -2,7 +2,7 @@
 
 **Status: non-normative.** A business-side working document, not a specification. It defines nothing to build.
 
-Step 3 of the *Pitch Implementation Guidelines* (2026-10-03): the deck prompt run on [`0061-pitch-input.md`](./0061-pitch-input.md) and on nothing else. This is a slide-by-slide specification to design from, not designed slides. Two of the ten slides are skeletons (team, financials), because the references hold nothing for them, and four more lack key numbers (results so far, market, business model, and the ask on the closing slide). The Gaps report lists what each one needs.
+Step 3 of the *Pitch Implementation Guidelines* (2026-10-03): the deck prompt run on [`0061-pitch-input.md`](./0061-pitch-input.md) and on nothing else. This is a slide-by-slide specification to design from, not designed slides. Two of the eleven slides are skeletons (team, financials), because the references hold nothing for them, and four more lack key numbers (results so far, market, business model, and the ask on the closing slide). The Gaps report lists what each one needs.
 
 ## Order
 
@@ -12,14 +12,15 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 |---|---|---|
 | 1 | Title | Ready, apart from the logo and the ask's numbers |
 | 2 | Problem | Ready |
-| 3 | Solution | Ready, apart from the screenshot |
-| 4 | Results so far | Build progress only; traction missing |
-| 5 | Market | TAM and SAM set with a proxy price; revenue SOM missing |
-| 6 | Business model | Model set; price, cost and margin missing |
-| 7 | Competition | Ready |
-| 8 | Team | Skeleton |
-| 9 | Financials | Skeleton |
-| 10 | The ask and close | Action set; the ask's numbers and dates, the contact details and the logo missing |
+| 3 | Solution | Ready; the real run is on slide 4 |
+| 4 | MVP run | Ready: one real run on an open pull request. The model and token counts were not captured with it |
+| 5 | Results so far | Build progress only; traction missing |
+| 6 | Market | TAM and SAM set with a proxy price; revenue SOM missing |
+| 7 | Business model | Model set; price, cost and margin missing |
+| 8 | Competition | Ready |
+| 9 | Team | Skeleton |
+| 10 | Financials | Skeleton |
+| 11 | The ask and close | Action set; the ask's numbers and dates, the contact details and the logo missing |
 
 ---
 
@@ -54,10 +55,21 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
   - Runs the project's own tests and type-check.
   - Each finding cites evidence, or says "unverified".
 - **Key number:** 1 command, 1 model pass per review — Source: `specs/001-walking-skeleton/contracts/cli.md`; SRS v1 §2.1.
-- **Visual:** `[MISSING: screenshot of a real agentic-review review run]`. Until it exists: the pipeline flowchart from SRS v1 §2.1.
+- **Visual:** none. The real run is shown on slide 4.
 - **Speaker notes:** A developer runs one command in their repository and reads the findings in the terminal. Today's build reviews uncommitted changes in one model pass; running the tests is the next step and is not in that build. This version serves the author before they push; the reviewer on GitHub is served when the same core reaches GitHub in version 3.
 
-### Slide 4 — Results so far
+### Slide 4 — MVP run
+
+- **Headline:** The MVP reviews a real pull request
+- **Body:**
+  - One command reads the pull request from GitHub.
+  - 10 of 16 files reviewed; 1 finding reported, with evidence.
+  - It states its own gaps.
+- **Key number:** 1 finding on a 16-file pull request in 125.4 s, including the clone — Source: the run's own output, made from `notebooks/run_review_quickstart.ipynb` on 2026-10-09 and supplied by the founder. The saved notebook holds an earlier run.
+- **Visual:** two screenshots of microsoft/playwright#43199 on GitHub, cropped to the pull request itself; an arrow; and the tool's output redrawn as a card: the file counts, the finding with its severity, category, lines and evidence, the tool's own caveats, and the verdict.
+- **Speaker notes:** This is a real open pull request on Microsoft's Playwright, and one command read it from GitHub and reviewed its ten TypeScript and JavaScript files in about two minutes. It reported one finding with its location and evidence, and it also said what it did not do: no checks ran, and nine of the ten files got no finding call. We have not confirmed the finding with the maintainers; the point is that the pipeline runs end to end on real code and reports its own gaps.
+
+### Slide 5 — Results so far
 
 - **Headline:** Built so far: a single-pass command-line review
 - **Body:**
@@ -68,7 +80,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** none
 - **Speaker notes:** These are build milestones, not traction: the references record no user outside the team, no pilot and no letter of intent. The package scaffold and CI were merged on 2026-09-26, and on 2026-09-28 the first feature had 78 of its 109 tasks ticked. We cannot yet show that the tool catches wrong-shaped code, because the benchmark that measures a catch rate is not built.
 
-### Slide 5 — Market
+### Slide 6 — Market
 
 - **Headline:** Up to $10.5B–$13.1B a year, at rivals' prices
 - **Body:**
@@ -79,7 +91,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** three nested bars for TAM, SAM and SOM; the TAM and SAM bars can be drawn today.
 - **Speaker notes:** The ceiling assumes every professional developer pays rivals' entry price; narrowed to TypeScript or JavaScript developers in pull-request teams who use AI tools, it is $2.0B–$4.0B. The category leader reaches about 0.4% of professional developers, and no open-source review Action has passed 460 repositories. Until our pilot measures review volume and we set the markup, rivals' entry price stands in for ours.
 
-### Slide 6 — Business model
+### Slide 7 — Business model
 
 - **Headline:** Free CLI; hosted reviews at cost plus markup
 - **Body:**
@@ -90,7 +102,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** none
 - **Speaker notes:** The command-line tool stays free; revenue comes from a hosted review service priced at its variable cost plus a markup. Our cost sheet has unit prices, for example $0.0248 per 1M input tokens and $4.35 per 1M output tokens for one model, but not yet how many tokens a review uses. The hosted service is not designed yet and has no version assigned. `[MISSING: what the hosted service gives a customer that the free tool does not]`
 
-### Slide 7 — Competition
+### Slide 8 — Competition
 
 - **Headline:** Rivals verify with a model; ours runs the tests
 - **Body:**
@@ -101,7 +113,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** the "Verification" and "Cost model" rows of the positioning table in `competitive-landscape.md`.
 - **Speaker notes:** The real alternatives are hosted reviewers priced per seat or per review, manual review, and free rule-based tools such as DangerJS. Our difference is specified but not yet built: findings backed by the project's own test run, in an engine anyone can inspect. Our stated limits are a feature set of about CodeRabbit's entry tier, a free-tier model that is likely noisier, and no benefit on repositories without a runnable test suite.
 
-### Slide 8 — Team
+### Slide 9 — Team
 
 - **Headline:** `[MISSING: who the team is, in one line]`
 - **Body:**
@@ -110,7 +122,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** `[MISSING: team photos]`, optional
 - **Speaker notes:** `[MISSING: for each person, the relevant skill or experience, not the title]` The references name no team member; the git history has one author.
 
-### Slide 9 — Financials
+### Slide 10 — Financials
 
 - **Headline:** `[MISSING: three-year forecast and break-even point]`
 - **Body:**
@@ -121,7 +133,7 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 - **Visual:** none until the numbers exist.
 - **Speaker notes:** Our pricing template defines break-even as fixed monthly infrastructure divided by the contribution per customer, and every variable in it is still blank. The only money figure we have is a spending limit: a free tier, or a single plan of about $20 a month for model access. Two reference costs for a hosted service in Frankfurt are $19.71 a month for one load balancer and $37.96 a month for one NAT gateway, before usage.
 
-### Slide 10 — The ask and close
+### Slide 11 — The ask and close
 
 - **Headline:** We ask for pilot teams, not money
 - **Body:**
@@ -142,14 +154,15 @@ The audience is the DEPI jury. The deck leads with the problem and the results s
 |---|---|
 | 1 Title | Logo; the number of teams and the pilot length in the ask line |
 | 2 Problem | A quote from a reviewer the team interviewed itself. The slide stands without it |
-| 3 Solution | A screenshot of a real review run |
-| 4 Results so far | Users, pilots or signed letters of intent, each with a date |
-| 5 Market | Revenue SOM: hosted-service conversion from the pilot; a path from the pilot to the v3 adoption target; our own yearly spend, to replace the proxy |
-| 6 Business model | What the hosted service gives a customer that the free tool does not; the markup and the unit it applies to; cost per review; margin and its type |
-| 7 Competition | A reason to choose us over Qodo specifically |
-| 8 Team | 2–4 people: name, role, one line each |
-| 9 Financials | Revenue and costs for years 1 to 3; break-even point; the assumptions behind them |
-| 10 The ask and close | Number of teams; length; start date; a measurable milestone and its date; how and when a team can install the build; contact details; logo |
+| 3 Solution | Nothing |
+| 4 MVP run | Which model produced the run, and its token counts; confirmation of the finding by the maintainers |
+| 5 Results so far | Users, pilots or signed letters of intent, each with a date |
+| 6 Market | Revenue SOM: hosted-service conversion from the pilot; a path from the pilot to the v3 adoption target; our own yearly spend, to replace the proxy |
+| 7 Business model | What the hosted service gives a customer that the free tool does not; the markup and the unit it applies to; cost per review; margin and its type |
+| 8 Competition | A reason to choose us over Qodo specifically |
+| 9 Team | 2–4 people: name, role, one line each |
+| 10 Financials | Revenue and costs for years 1 to 3; break-even point; the assumptions behind them |
+| 11 The ask and close | Number of teams; length; start date; a measurable milestone and its date; how and when a team can install the build; contact details; logo |
 
 ### 2. Numbers shown without a source
 
@@ -162,13 +175,13 @@ Full quotations and links are in [`0061-pitch-input.md`](./0061-pitch-input.md).
 | # | One input says | Another says | Where it stands |
 |---|---|---|---|
 | 1 | Canvas §5: "Open core, decided 2026-10-03", with revenue from "a hosted review service" | Requirement catalogue §2.2: a hosted GitHub App is "out of scope entirely". ADR-0005: "The product is deliberately **not** a hosted service." SRS §2.1: "It operates no server" | Open. The business model is recorded in the canvas, the landscape and a catalogue note, but the paid product has no specification, version or ADR. Expect "why pay if the tool is free?": the canvas says the hosted tier's added value "is not stated" |
-| 2 | Canvas §1: the customer is "peer reviewers of AI-assisted TS/JS pull requests". Entrepreneurship problem statement §4: "an open-source GitHub Action" | SRS §2.2: "v1's primary user is the **author**, not the reviewer". SRS §1.2: "GitHub integration of any kind (v3)" | Open. Slide 3 says it aloud, as SRS §9 (R-5) requires |
+| 2 | Canvas §1: the customer is "peer reviewers of AI-assisted TS/JS pull requests". Entrepreneurship problem statement §4: "an open-source GitHub Action" | SRS §2.2: "v1's primary user is the **author**, not the reviewer". SRS §1.2 leaves "GitHub integration beyond reading a public pull request" to v3 | Open. Slide 3 says it aloud, as SRS §9 (R-5) requires. Since 2026-10-09 the command line can read a public pull request by its address (ADR-0011), which slide 4 shows; nothing is posted back to GitHub |
 | 3 | Problem definition: reviewers cannot judge "clean-looking, test-passing changes" | Landscape, differentiator 2: "We verify by running the actual test suite". The same file: "the execution-backed claim thins on a machine where the developer can already run their own tests" | Open. Running tests cannot by itself catch code that passes its tests. The pitch names the project's rules as what catches it and the test run as the evidence. Expect this question |
-| 4 | Cost sheet: Qwen3.8 27B at "$4.35 / 1M output tokens" | Model comparison: deploy Qwen "exclusively for workloads requiring vision-language processing or document context exceeding 131K tokens"; gpt-oss at "$0.018 / $0.09" and "$0.03 / $0.17". The built tool defaults to the NVIDIA NIM free tier | Open. Cost per review cannot be computed until one model is chosen |
+| 4 | Cost sheet: Qwen3.8 27B at "$4.35 / 1M output tokens" | Model comparison: deploy Qwen "exclusively for workloads requiring vision-language processing or document context exceeding 131K tokens"; gpt-oss at "$0.018 / $0.09" and "$0.03 / $0.17". The built tool defaults to the NVIDIA NIM free tier | Open on purpose. On 2026-10-09 the model and its price were left as variables while the product is experimental. Cost per review is a formula with price scenarios, in `review-volume-report.md` |
 | 5 | Pricing template: "F = Fixed monthly infrastructure", with break-even at "F / [P - (C × R)]" | Cost sheet: every resource is usage, and "we should not write 'Elastic IP = $3.65/month' as a fixed cost" | Open. Decide which costs are passed through and which the markup must cover |
 | 6 | Tool reference: Qodo "Uses a credit-based system; specific tiers are on the pricing page (not enumerated here)" | Pricing template: Qodo at "$30" per "/team/mo", no source | Open. The slide uses "credit-based" |
 
-**A conflict inside the guide itself.** Slides 1 and 10 must carry the one-liner and the ask line, and together they exceed the 25-word body limit of rule 9: the one-liner alone is 28 words. The guide's own laundry one-liner is 22 words, so it would break the limit the same way once an ask line is added. Both slides keep the one-liner whole. The 23-word short form in [`0062-one-liner-and-elevator-pitch.md`](./0062-one-liner-and-elevator-pitch.md) brings them closer, not under.
+**A conflict inside the guide itself.** Slides 1 and 11 must carry the one-liner and the ask line, and together they exceed the 25-word body limit of rule 9: the one-liner alone is 28 words. The guide's own laundry one-liner is 22 words, so it would break the limit the same way once an ask line is added. Both slides keep the one-liner whole. The 23-word short form in [`0062-one-liner-and-elevator-pitch.md`](./0062-one-liner-and-elevator-pitch.md) brings them closer, not under.
 
 ### 4. Every calculation made
 
@@ -199,18 +212,19 @@ Prepared for questions, as the guide advises.
 | 84.5% and 32.7% | 2 | LinearB 2026 through AIBuilderClub 2026; background study A2 | A vendor's own platform data on 8.1M PRs across ~4,800 teams, read second-hand. It compares two groups of pull requests and does not show that AI caused the gap |
 | One team; three sources | 2, notes | Background study A3 and A4 | Anecdote. Nobody has measured how often this happens; the benchmark and the pilot exist to find out |
 | 1 command, 1 model pass | 3 | `contracts/cli.md`; SRS v1 §2.1 | In version 1 the model is called once per review |
-| 2026-09-17 | 4 | Git history, branch `001-us2-no-finding-clean-review` | The build is on a feature branch that is not merged to `main` |
-| 2026-09-26; 78 of 109; 2026-09-28 | 4, notes | Git history; `specs/001-walking-skeleton/tasks.md` on that branch | The task count covers the first feature only |
-| 36.5M | 5 | SlashData, early 2025, via `004-market-study.md` (confidence A) | Professional developers worldwide. GitHub's 180M+ counts accounts and is not used |
-| $10.5B–$13.1B | 5 | Our calculation in the market study (confidence C) | An upper bound at rivals' entry prices, which stand in for ours until the pilot; not our serviceable market |
-| About 0.4% | 5, notes | Market study (confidence C): $40M ARR ÷ $288 per seat per year | Rests on Sacra's revenue estimate for CodeRabbit |
-| 7.0M–11.2M; $2.0B–$4.0B | 5 | Market study SAM (confidence C), from Stack Overflow 2025 (A) and JetBrains 2025 (B, proxy) | The pull-request-team share is a proxy (regular CI/CD use) read from a search excerpt; the shares are multiplied as if independent |
-| 460 repositories | 5, notes | Sun et al., arXiv 2508.18771, via the market study (A) | Public repositories configuring the most-adopted open-source review Action, January 2025; private use is invisible |
-| $0.0248 and $4.35 per 1M tokens | 6, notes | `pr-variable-pricing-model.md` | List prices for one model; our own comparison sheet recommends a cheaper one for text-only work (contradiction 4) |
-| $24 and $30 | 7 | `tool-reference.md`, September 2026 snapshot | Entry paid tiers from the vendors' own pages; CodeRabbit's is billed annually |
-| $15–25 | 7 | `tool-reference.md` | The vendor's own average token cost per review; our pricing template says to re-verify it |
-| About $20 a month | 9, notes | Canvas §6 | A spending limit, not a forecast |
-| $19.71 and $37.96 | 9, notes | `pr-variable-pricing-model.md` | 730 hours at the hourly list price for one resource in Frankfurt, before usage; the source says to verify them with the AWS calculator |
+| 16 files, 10 reviewed, 6 listed; 1 finding; 9 of 10 files; 125.4 s | 4 | The run's own output, 2026-10-09 | One run on one pull request. The finding is the tool's claim and is unconfirmed. The output did not include the model or the token counts |
+| 2026-09-17 | 5 | Git history, branch `001-us2-no-finding-clean-review` | The build is on a feature branch that is not merged to `main` |
+| 2026-09-26; 78 of 109; 2026-09-28 | 5, notes | Git history; `specs/001-walking-skeleton/tasks.md` on that branch | The task count covers the first feature only |
+| 36.5M | 6 | SlashData, early 2025, via `004-market-study.md` (confidence A) | Professional developers worldwide. GitHub's 180M+ counts accounts and is not used |
+| $10.5B–$13.1B | 6 | Our calculation in the market study (confidence C) | An upper bound at rivals' entry prices, which stand in for ours until the pilot; not our serviceable market |
+| About 0.4% | 6, notes | Market study (confidence C): $40M ARR ÷ $288 per seat per year | Rests on Sacra's revenue estimate for CodeRabbit |
+| 7.0M–11.2M; $2.0B–$4.0B | 6 | Market study SAM (confidence C), from Stack Overflow 2025 (A) and JetBrains 2025 (B, proxy) | The pull-request-team share is a proxy (regular CI/CD use) read from a search excerpt; the shares are multiplied as if independent |
+| 460 repositories | 6, notes | Sun et al., arXiv 2508.18771, via the market study (A) | Public repositories configuring the most-adopted open-source review Action, January 2025; private use is invisible |
+| $0.0248 and $4.35 per 1M tokens | 7, notes | `pr-variable-pricing-model.md` | List prices for one model; our own comparison sheet recommends a cheaper one for text-only work (contradiction 4) |
+| $24 and $30 | 8 | `tool-reference.md`, September 2026 snapshot | Entry paid tiers from the vendors' own pages; CodeRabbit's is billed annually |
+| $15–25 | 8 | `tool-reference.md` | The vendor's own average token cost per review; our pricing template says to re-verify it |
+| About $20 a month | 10, notes | Canvas §6 | A spending limit, not a forecast |
+| $19.71 and $37.96 | 10, notes | `pr-variable-pricing-model.md` | 730 hours at the hourly list price for one resource in Frankfurt, before usage; the source says to verify them with the AWS calculator |
 
 ---
 
@@ -221,14 +235,14 @@ The guide's twelve boxes. Three can be ticked today.
 - [ ] Audience, ask and format are written down, and the deck order matches the audience. **Not yet:** the audience and order are set, but the ask has no number or dates, and the format and slot are assumed. The order now ends with the ask, by decision of 2026-10-09, rather than following the guide's jury row.
 - [ ] A stranger can repeat the one-liner after hearing it once. **Not tested.**
 - [ ] The elevator pitch runs under 60 seconds out loud and ends with one clear ask. **Not tested:** 121 words is about 48 to 56 seconds by word count, and the ask has two placeholders.
-- [x] The deck has 10–12 slides; anything extra is in an appendix. 10 slides.
-- [ ] Every slide passes the three-second test and uses 30-point text or larger. **Not tested:** the designed draft has not been checked against it, and slides 1 and 10 are over 25 words.
+- [x] The deck has 10–12 slides; anything extra is in an appendix. 11 slides.
+- [ ] Every slide passes the three-second test and uses 30-point text or larger. **Not tested:** the designed draft has not been checked against it, and slides 1 and 11 are over 25 words.
 - [ ] The market size shows its bottom-up calculation and data source. **Partly:** TAM and SAM show their calculations and sources, with a proxy price; revenue SOM is missing.
 - [ ] SOM is reachable from current traction, or the gap is explained. **Missing:** revenue SOM and traction do not exist, and the v3 adoption target (100–500 repositories) has no path from today yet.
 - [x] The competition slide names real alternatives. Four on the slide, seven in the input sheet.
 - [ ] Every figure matches across all slides (price, margin, traction, ask). **Not yet:** the figures that exist agree, but price, margin, traction and the ask's numbers do not exist.
 - [ ] Use-of-funds shares add up to 100% and each links to the milestone. **Does not apply as written:** no funds are requested. The milestone is still missing.
-- [ ] The ask appears early and is repeated at the close, with contact details on screen. **Not yet:** the ask is on slides 1 and 10; the contact details are missing.
+- [ ] The ask appears early and is repeated at the close, with contact details on screen. **Not yet:** the ask is on slides 1 and 11; the contact details are missing.
 - [x] Every AI-generated number has been checked against a source or removed. Each number was searched for in the file it cites on 2026-10-03. Check the three calculations above yourself.
 
 ---
@@ -239,8 +253,8 @@ Fill these in [`0061-pitch-input.md`](./0061-pitch-input.md), then regenerate th
 
 1. **The ask:** number of teams, pilot length, start date, the measurable milestone and its date, and what you want from the jury itself.
 2. **Team:** 2–4 people, each with a role and one line on why they matter.
-3. **Business model and unit economics:** what the hosted service gives a customer that the free tool does not; one model choice; tokens per review from a measured run; the markup; and which costs the markup must cover.
+3. **Business model and unit economics:** what the hosted service gives a customer that the free tool does not; tokens per review from measured runs, with the model and its price kept as variables; the markup; and which costs the markup must cover.
 4. **Market:** hosted-service conversion from the pilot for revenue SOM, a path from the pilot to the v3 adoption target, and, once review volume and the markup exist, our own yearly spend in place of the proxy.
 5. **Financials:** revenue and costs for years 1 to 3, and the break-even point.
-6. **Close and visuals:** contact details, a logo, and one screenshot of a real review run.
+6. **Close and visuals:** contact details and a logo. The real review run is now on slide 4.
 7. **Pilot readiness:** a LICENSE file, and a way for a team to install the build.
