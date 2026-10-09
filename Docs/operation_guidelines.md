@@ -34,7 +34,7 @@ with them, this guide is wrong.
 ```mermaid
 flowchart LR
     P["Preflight<br/>repo · config · key"] -->|problem| X["message on stderr<br/>exit 3"]
-    P --> C["Change set<br/>HEAD ↔ working tree<br/>+ untracked files"]
+    P --> C["Change set<br/>working tree · branch range<br/>· public pull request"]
     C --> A["Assembly<br/>instructions + diff"]
     A --> R["Review<br/>one model call<br/>emit_finding only"]
     R --> O["Terminal summary<br/>exit 0 / 1 / 2"]
@@ -42,8 +42,10 @@ flowchart LR
 
 | Available | Not yet |
 |---|---|
-| `agentic-review review` with no options | `--scope`, `--base`, `--config`, `--ceiling`, `--json` |
-| Reviewing **uncommitted** changes (staged + unstaged + untracked) | Staged-only and range scopes |
+| `agentic-review review`, with `--scope`, `--base`, `--head`, `--pr`, `--config`, `--ceiling` | `--commit`, `--json` |
+| Reviewing **uncommitted** changes (staged + unstaged + untracked) | Staged-only and single-commit scopes |
+| Reviewing a **branch range** (`--scope range --base REF [--head REF]`) | |
+| Reviewing a **public GitHub pull request** (`--pr URL`), with no checkout | Private repositories; anything posted back to GitHub |
 | Default and configured exclusions | "Nothing to review" short-circuit |
 | One model pass; findings only through `emit_finding`, validated | Repair turn, tool-call ceiling, diff-size refusal |
 | Terminal summary, verdict, exit codes 0 / 1 / 2 / 3 | `schema` and `--version` commands |
@@ -162,6 +164,39 @@ uv run --project "$AR" --env-file "$AR/.env" agentic-review review
 ```
 
 Running from any subdirectory of the repository works; all paths in the output are repository-relative.
+
+### Review a branch without checking it out
+
+```powershell
+uv run --env-file .env agentic-review review --scope range --base main --head feature-x
+```
+
+This reviews what `feature-x` changed **since it left** `main` (`git diff main...feature-x`). Commits that landed on
+`main` afterwards are not shown as the branch's work. `--head` defaults to `HEAD`. The working tree is not read, so
+uncommitted edits are not part of a range.
+
+### Review a public pull request
+
+```powershell
+uv run --project $AR --env-file "$AR\.env" agentic-review review --pr https://github.com/OWNER/REPO/pull/123
+```
+
+It works from **any directory**; no local copy of the repository is needed.
+
+| What happens | Detail |
+|---|---|
+| A temporary clone is made | `git clone --filter=blob:none --no-checkout`: history only, no files on disk. It is deleted when the run ends |
+| The pull request's head is fetched | From `refs/pull/123/head`, so pull requests from forks work |
+| It is compared with a base branch | The repository's **default branch**, unless you pass `--base BRANCH`. git cannot know which branch a pull request targets, so check the scope line if the pull request aims at a release branch |
+| Nothing from the pull request runs | No checkout, no install, no hooks, no tests |
+| No settings are read from it | Not from the pull request, and not from the directory you are in. Use `--config PATH` to give settings; otherwise the defaults apply |
+
+> **Two things leave your machine.** git contacts github.com to read the repository, and the pull request's diff is
+> sent to the model provider like any other review. Only **public** repositories can be read: git is not allowed to
+> use stored credentials or to prompt for a login.
+>
+> This git-based reader is **interim**. It is to be replaced by one backed by the official GitHub MCP server
+> ([ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md)).
 
 ### Try it on the demo repository (recommended first run)
 
@@ -386,7 +421,17 @@ In this order:
 | Traceback ending `AuthenticationError: Error code: 401` or `403` | Key invalid, revoked or without access to that model | Check or recreate the key |
 | Traceback ending `APIConnectionError` / `APITimeoutError` | No network, proxy, or endpoint down | Check connectivity and `agent.baseUrl` |
 | Traceback ending `RateLimitError: Error code: 429` | Free-tier rate limit | Wait and retry |
-| Traceback ending `NotImplementedError: the staged scope arrives with User Story 4` | `scope: staged` or `range` in the config | Remove `scope` or set `working-tree` |
+| Traceback ending `NotImplementedError: the staged scope arrives with User Story 4` | `scope: staged` in the config | Remove `scope` or set `working-tree` |
+| `--scope: 'staged' is not available in this build` (exit 3) | Only `working-tree` and `range` are built | Use one of those, or `--pr` |
+| `The range scope needs a base to compare with` (exit 3) | `--scope range` (or `scope: range`) without `--base` | Add `--base REF` |
+| `The range base '...' does not exist` / `The range head '...' does not exist` (exit 3) | A mistyped or unfetched ref | `git fetch`, or name an existing branch, tag or commit |
+| `--pr: '...' is not a GitHub pull request URL` (exit 3) | Not of the form `https://github.com/OWNER/REPO/pull/N` | Paste the pull request's URL from the browser |
+| `The repository of ... could not be cloned` with `terminal prompts disabled` (exit 3) | The repository is private or does not exist | Only public repositories can be read |
+| `The repository of ... could not be cloned` with a network error (exit 3) | No connection to github.com, or a proxy | Check connectivity |
+| `Pull request #N was not found in OWNER/REPO` (exit 3) | Wrong number, or not a pull request | Check the URL |
+| `The base branch '...' does not exist in OWNER/REPO` (exit 3) | `--base` names a branch the repository does not have | Name the branch the pull request targets |
+| A `--pr` review ends `budget-exhausted` (exit 2) | The pull request's diff is larger than `budget.maxTokens` | Raise it in a file passed with `--config` |
+| A `--pr` review ignores your `.agentic-review.yml` | By design: a pull request review reads settings only from `--config` | Pass `--config PATH` |
 | `Verdict: no findings were accepted.` with a `no-tool-call` degradation | Model did not call the tool | Section 7; try another model |
 | Review ran but a file is missing from "Reviewed" | Excluded, deleted, binary, or not TS/JS | Read the "listed, not reviewed" and "Excluded" sections |
 | A clean change still calls the model | "Nothing to review" is not implemented yet | Expected until User Story 4 |
@@ -517,8 +562,9 @@ Each run is a real, rate-limited API call; 50 runs per model take a while on the
 | Provider failures produce a report and exit 2, instead of a traceback | Feature 001, User Story 2 |
 | Repair turn (one retry for rejected findings), tool-call ceiling, `--ceiling` | Feature 001, User Story 2 |
 | Refusing a diff larger than `budget.maxTokens` | Feature 001, User Story 2 |
-| `--config PATH`, `--base REF`, range-base check | Feature 001, User Story 3 |
-| `--scope staged \| range`, "nothing to review" | Feature 001, User Story 4 |
+| `--commit REF` and its check; the rest of the preflight contract | Feature 001, User Story 3 |
+| `--scope staged \| commit` (reviewing one commit needs both rows), "nothing to review" | Feature 001, User Story 4 |
+| A pull-request reader backed by the GitHub MCP server (private repositories, the true base branch) | Its own ADR, after ADR-0011 |
 | `--json [PATH]`, `agentic-review schema`, `--version` | Feature 001, User Story 5 |
 | Notice listing ignored config settings; clean handling of internal errors | Feature 001, Polish |
 | Running the project's tests and type-check as evidence | Feature 002 |
