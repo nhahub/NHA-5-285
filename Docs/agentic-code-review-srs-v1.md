@@ -1,6 +1,6 @@
 # Software Requirements Specification — Agentic Code Review v1
 
-**Status:** Baselined · **Version:** 1.1 · **Date:** 2026-09-14
+**Status:** Baselined · **Version:** 1.5 · **Date:** 2026-10-09
 **Scope:** Local command-line reviewer for TypeScript/JavaScript
 **Audience:** Contributors building v1, and reviewers verifying that a change meets it
 
@@ -30,6 +30,8 @@ It was derived from the analysis in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md)
 |---|---|---|
 | 1.0 | 2026-09-08 | Baselined from [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) |
 | **1.1** | **2026-09-14** | **Design-review corrections.** Resolves fifteen items raised in [`../DESIGN_BLOCKERS.md`](../DESIGN_BLOCKERS.md) during design milestones M0–M3. No requirement was renumbered and no behaviour was removed. Two kinds of change: **contradictions fixed** (the tool-call ceiling could not coexist with tool-call-only findings; §1.2 both included and excluded the tool loop; a rejected finding had no correction path) and **mechanism withdrawn** (a library name, a language-specific interface declaration, and internal identifiers left the normative text for the design and stack documents, which is where the project's own conventions put them). Summarised in §10. |
+| **1.4** | **2026-10-09** | **A fourth change scope.** FR-10.3a gains one selection: the changes introduced by a single named commit. No requirement was renumbered and nothing was removed; FR-10.3b and FR-10.3c are untouched, because the new scope produces the same files-and-hunks structure as the other three. §1.2 is updated to match. **FR-4.8 (new)** — under that scope no check is executed; each is recorded as skipped. |
+| **1.5** | **2026-10-09** | **Reading a public pull request**, decided in [ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md). FR-10.3a gains a fifth selection — a public pull request named by its URL — and lets a comparison name the ref it reviews. **FR-10.3d (new)** — nothing from a pull request is executed, and no configuration is read from it. FR-4.8 is extended to the pull-request scope. §1.2 and §7 no longer say "GitHub integration of any kind": reading a pull request's change set is in v1, and everything else of GitHub stays v3. FR-10.1 is unchanged and still true. |
 
 ---
 
@@ -55,7 +57,7 @@ flowchart LR
 
 **In scope for v1**
 
-- A local CLI reviewing a working tree, staged changes, or a branch range in a TS/JS repository
+- A local CLI reviewing a working tree, staged changes, a branch range, or a single commit in a TS/JS repository — or a public pull request named by its URL, read without being checked out ([ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md))
 - Syntax-tree parsing and related-context retrieval behind a depth-parameterised interface, with the parser-backed implementation serving depths 0 and 1
 - Execution of the project's tests and type-check, with a recorded evidence trail
 - A review agent isolated from any code-writing agent, grounded in that evidence and in a pattern library — a single pass by default, with read-only investigation tools available once a baseline has been measured (FR-5.7a, FR-5.7b)
@@ -63,7 +65,7 @@ flowchart LR
 - A pattern library and a runnable regression harness reporting a catch rate
 - Configuration, credential handling, and diagnosable failure messages
 
-**Deliberately not in v1** — §7 lists these with their destination version. In summary: GitHub integration of any kind (v3), context depths 2 and above, risk triage, cross-run de-duplication, and fix-patch generation.
+**Deliberately not in v1** — §7 lists these with their destination version. In summary: GitHub integration beyond reading a public pull request (v3; amended in v1.5 by [ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md)), context depths 2 and above, risk triage, cross-run de-duplication, and fix-patch generation.
 
 *The investigation loop is **in** v1 and off by default (FR-5.7a, FR-5.7b), scheduled at Appendix A step 4.5. Version 1.0 of this document listed it in both lists.*
 
@@ -197,11 +199,16 @@ Written as testable "the system shall…" statements. Identifiers are inherited 
 
 ### 4.1 CF-1 — Change-Set Resolution
 
-- **FR-10.3a (Must)** The system shall resolve the change scope from an explicit selection among: uncommitted working-tree changes, staged changes only, or a comparison against a named branch or commit.
+- **FR-10.3a (Must) (amended in v1.4 and v1.5)** The system shall resolve the change scope from an explicit selection among: uncommitted working-tree changes, staged changes only, a comparison against a named branch or commit, the changes introduced by a single named commit, or a public pull request named by its URL. A comparison reviews the current head unless another ref is named.
 - **FR-10.3b (Must)** The system shall apply a documented default change scope when none is specified, and shall state the resolved scope in its output.
 - **FR-10.3c (Must) (new in v1)** The resolved change set shall be expressed as a list of changed files and diff hunks, in a structure independent of how it was resolved.
+- **FR-10.3d (Must) (new in v1.5)** When the change set comes from a pull request, the system shall execute nothing from it and shall read no configuration from it. A pull request that cannot be read shall stop the run before any model call, with a message naming the pull request.
 
 *FR-10.3c is the seam that lets the v3 Action adapter substitute "PR head against base" (FR-2.1) with no downstream change.*
+
+*Amended in v1.4. FR-10.3a named three selections, and all three end at the current checkout: none can review one commit that is already in history without checking it out and naming its parent by hand. The fourth selection names the commit and reviews what it introduced. It is a new way to **produce** a change set, not a new kind of change set — FR-10.3c already requires the structure to be independent of how it was resolved, so nothing downstream of CF-1 changes.*
+
+*Amended in v1.5 by [ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md). The pull-request selection is the v3 substitution the sentence above describes, arriving early and on the CLI: "PR head against base" produced by a flag instead of by an Action. It moves **reading** forward and nothing else — no comment, no status check, no trigger. FR-10.3d is the condition under which that is safe. A pull request is a stranger's code: executing it is the exposure [ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md) describes, and letting it supply the configuration would let it name the provider URL the credential is sent to. How the pull request is fetched is deliberately not stated here; that is a mechanism, it lives in the stack and design documents, and it is expected to change.*
 
 ### 4.2 CF-2 — Parsing and Related Context
 
@@ -278,6 +285,11 @@ It also absorbs the resolver sidecar entirely. The sidecar is `ParserContextProv
 - **FR-4.5c (Must)** The system shall make this execution record available to the review agent and include it in the structured output.
 - **FR-4.6 (Must) (new in v1)** The review agent shall not be able to trigger check execution. Execution occurs once per invocation, before the review pass.
 - **FR-4.7 (Must) (new in v1)** Checks shall be executed as subprocesses invoking the reviewed project's own toolchain and package manager, discovered from its manifest or named in configuration. The system shall not import the reviewed project's dependencies into the host runtime, and shall not require the reviewed project to install anything belonging to the system.
+- **FR-4.8 (Must) (new in v1.4, extended in v1.5)** Under the single-commit and pull-request change scopes (FR-10.3a) the system shall not execute checks. Each check shall be recorded as skipped (FR-4.5a) with a reason stating that checks do not apply to that scope, and the review agent shall be told that no check was run.
+
+*FR-4.8 exists because checks run on the files on disk, and a single-commit review reads the commit from git — the working tree need not hold that commit at all. A test result gathered there would be evidence about different code, presented as evidence about the reviewed code, which is worse than no evidence. The scope's purpose is narrower anyway: to read one commit for its problems. Its findings therefore rest on the diff or are marked unverified (FR-5.2c), and AC-2 is not expected of it. Skipped, never passed: FR-4.5a and AC-7 apply unchanged.*
+
+*Extended in v1.5 to the pull-request scope, for a stronger reason: there the code belongs to someone else, and FR-10.3d forbids executing it at all.*
 
 *FR-4.7 is the one consequence CF-3 takes from the host language being different from the target language ([ADR-0007](./adr/0007-python-harness-typescript-target.md)). It is close to free: the system was always going to shell out to `npm test` and `tsc`, and it now has no mechanism to do anything else. What the requirement adds is the second half — that the reviewer never contaminates the project it is reviewing, in either direction. A version conflict between reviewer and reviewed is not a bug that can be introduced.*
 
@@ -495,7 +507,7 @@ Full reasoning for each is in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) §4.
 | Fix snippets and evidence links | FR-7.1a, FR-7.3 | v2 |
 | Platform support matrix, prebuilt binaries, containerised distribution | FR-10.6 | v2 — v1 ships a PyPI wheel and documents what it was tested on; a formal matrix, standalone binaries, and an image are later work ([ADR-0007](./adr/0007-python-harness-typescript-target.md)) |
 | Tolerating unparseable working trees | FR-10.7 | v2 — v1 requires a parseable tree and says so |
-| **All GitHub integration** — Action trigger, PR comments, suggested-change blocks, status checks, example workflow, untrusted-code isolation, comment ledger | FR-1.1, FR-1.3, FR-1.4, FR-2.1, FR-7.1, FR-8.1a, FR-8.1c, FR-8.3, FR-9.2; [ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md), [ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md) | **v3** |
+| **All GitHub integration except reading a public pull request** (v1.5, FR-10.3a/d) — Action trigger, PR comments, suggested-change blocks, status checks, example workflow, untrusted-code isolation, comment ledger, private repositories, any use of the GitHub API or a GitHub token | FR-1.1, FR-1.3, FR-1.4, FR-2.1, FR-7.1, FR-8.1a, FR-8.1c, FR-8.3, FR-9.2; [ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md), [ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md) | **v3** |
 
 FR-7.2 — suggestions are advisory, with no commit, push, or auto-apply — is satisfied trivially in v1: the system has no write path. It remains binding.
 
@@ -655,7 +667,7 @@ Step 4.5 exists for the same reason and is the one step that may end in a revert
 | FR-2.6a–h | CF-2 | AC-8, AC-10, AC-12, AC-14 |
 | FR-2.3c, FR-2.5, FR-2.5a–c | CF-4 | AC-1, AC-3 |
 | FR-3.5 | CF-9 | AC-1 |
-| FR-4.1, FR-4.2, FR-4.4a–b, FR-4.5a–c, FR-4.6, FR-4.7 | CF-3 | AC-1, AC-2, AC-7 |
+| FR-4.1, FR-4.2, FR-4.4a–b, FR-4.5a–c, FR-4.6, FR-4.7, FR-4.8 | CF-3 | AC-1, AC-2, AC-7 |
 | FR-5.1, FR-5.3, FR-5.7, FR-5.7a–d, FR-5.8, FR-5.9, FR-5.10 | CF-6 | AC-2, AC-10, AC-11, AC-16 |
 | FR-5.2, FR-5.2a–c, FR-5.6, FR-5.6a–c | CF-5 | AC-3, AC-13, AC-15 |
 | FR-6.1, FR-6.2a, FR-6.2b, FR-6.2d, FR-6.2e, FR-6.2f, FR-6.3a | CF-8 | AC-4, AC-5, AC-6, AC-11 |
@@ -664,5 +676,5 @@ Step 4.5 exists for the same reason and is the one step that may end in a revert
 | FR-9.1, FR-9.3 | CF-9 | AC-9 |
 | FR-9.2a, FR-10.1 | Cross-cutting | AC-1 |
 | FR-10.2 | Cross-cutting | AC-10 |
-| FR-10.3a–c | CF-1 | AC-1 |
+| FR-10.3a–d | CF-1 | AC-1 |
 | FR-11.1, FR-11.2, FR-11.3 | Cross-cutting | AC-7 |
