@@ -37,6 +37,17 @@ decision the documents do not make stops and reports it (Principle I) — it is 
   context — see commit `452735e`); tracing never changes the report, the exit code or what goes to stdout/stderr
   (contracts/cli.md); and with no `LANGFUSE_*` keys set, nothing is traced and nothing touches the network (SC-006).
   A task's **Langfuse:** note says what its change should look like in a trace.
+- **Single-commit scope (added 2026-10-09).** SRS v1.4 amended FR-10.3a with a fourth scope, `commit`, selected by
+  `--commit REF` (spec FR-005, Story 4 scenario 6; research R-4; contracts/cli.md; plan D-11). It is delivered by
+  T110–T111 and by the **Commit scope:** notes on the open tasks of Phases 5 and 6 — the same files and tests as
+  `staged` and `range`, so it is not a separate phase. The scope reads git objects only: no task may make it read
+  the working tree or the index.
+- **Pull-request scope (Phase 10, added 2026-10-09).** SRS v1.5 and ADR-0011 added a `pull-request` scope
+  (`--pr URL`) and a nameable head for `range` (`--head REF`). Phase 10 built both, and with them the `range`
+  half of User Stories 3 and 4. A **Phase 10:** note on an open task says what Phase 10 already delivered, so
+  that task finishes the rest rather than rebuilding it. Two rules bind every later task: nothing from a pull
+  request is executed or read as configuration (FR-10.3d), and nothing outside `core/changeset/` may depend on
+  how a pull request was fetched — that reader is interim (GitHub MCP server later).
 
 ---
 
@@ -189,13 +200,15 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ### Tests for User Story 3 ⚠️ write first
 
-- [ ] T079 [P] [US3] Write `tests/unit/pipeline/test_preflight.py` (create `tests/unit/pipeline/__init__.py`): checks run in the order of contracts/cli.md and stop at the first failure; `range` without `--base` names `--base`; `--base` with a non-range scope is rejected; an unknown base names the ref; `range` with unborn `HEAD` is refused; an explicit `--config` path that does not exist fails; every message says nothing was reviewed. `preflight()` now takes `CredentialSources`, not the environment (commit `452735e`)
-- [ ] T080 [US3] Write `tests/integration/test_story3_preflight.py` covering US3 acceptance scenarios 1–5 through the CLI: not a repo (message names the directory), invalid field and unknown field (message names the dotted path), missing credential (names `AGENTIC_REVIEW_API_KEY` and the user-level path), unknown range base (names the ref); each exits 3, stdout is empty even with `--json`, the stand-in model `call_count == 0`, and `resolve` was not called (SC-004). **Langfuse:** a preflight failure still yields one short trace — the `preflight` node, then `END` — whose output is the redacted failure message
+- [ ] T110 [P] [US3] Extend `tests/unit/findings/test_schema.py`: `report_schema()` lists exactly the five scope kinds `working-tree`, `staged`, `range`, `commit`, `pull-request` (the test exists since Phase 10 and lists four: add `commit`); and extend `tests/unit/config/test_settings.py`: `scope: commit` in the config file is rejected naming `scope`, because a commit is named per run and never by the file (FR-10.3a as amended in SRS v1.4, data-model §2 and §7)
+- [ ] T079 [P] [US3] Write `tests/unit/pipeline/test_preflight.py` (create `tests/unit/pipeline/__init__.py`): checks run in the order of contracts/cli.md and stop at the first failure; `range` without `--base` names `--base`; `--base` with a non-range scope is rejected; an unknown base names the ref; `range` with unborn `HEAD` is refused; an explicit `--config` path that does not exist fails; every message says nothing was reviewed. `preflight()` now takes `CredentialSources`, not the environment (commit `452735e`). **Commit scope:** `--scope commit` without `--commit` names `--commit`; `--commit` with any other `--scope`, or with `--base`, is rejected naming `--commit`; `--commit` alone is coherent and selects the scope; an unknown commit names the ref, in a repository with no commits too. **Phase 10:** `tests/unit/pipeline/test_preflight.py` exists (T115) and already covers the `range` and `--pr` cases; add check order across all five, the explicit `--config` path that does not exist, and the commit cases
+- [ ] T080 [US3] Write `tests/integration/test_story3_preflight.py` covering US3 acceptance scenarios 1–5 through the CLI: not a repo (message names the directory), invalid field and unknown field (message names the dotted path), missing credential (names `AGENTIC_REVIEW_API_KEY` and the user-level path), unknown range base (names the ref); each exits 3, stdout is empty even with `--json`, the stand-in model `call_count == 0`, and `resolve` was not called (SC-004). **Langfuse:** a preflight failure still yields one short trace — the `preflight` node, then `END` — whose output is the redacted failure message. **Commit scope:** scenario 4 also covers `--commit nope` — stderr names `nope`, exit 3, `resolve` not called. **Phase 10:** the range and pull-request failures are already covered through the CLI by `tests/integration/test_pull_request_scope.py`
 
 ### Implementation for User Story 3
 
-- [ ] T081 [US3] Complete `src/agentic_review/core/pipeline/preflight.py`: add check 3 (scope arguments coherent) and check 5 (base exists via `ref_exists`, `HEAD` not unborn for `range`) in contract order; every message states what is wrong, where it was looked for, and that nothing was reviewed (FR-001)
-- [ ] T082 [US3] Add `--config PATH` and `--base REF` options to `review` in `src/agentic_review/cli/app.py`, passing them into `ReviewRequest`
+- [ ] T111 [US3] Add the `commit` scope to the types the later tasks build on: `ScopeKind` in `src/agentic_review/core/findings/report.py` gains `commit` (`ScopeSetting` in `core/config/settings.py` does **not**); `ScopeRequest` in `core/changeset/model.py` and `ReviewRequest` in `agents/pipeline_agent.py` each gain `commit: str | None = None`. `SCHEMA_VERSION` stays `1.0` — the value is added before feature 001 first publishes the schema. `resolve` keeps raising `NotImplementedError` for the scope until T086. T079–T082 depend on this task
+- [ ] T081 [US3] Complete `src/agentic_review/core/pipeline/preflight.py`: add check 3 (scope arguments coherent) and check 5 (base exists via `ref_exists`, `HEAD` not unborn for `range`) in contract order; every message states what is wrong, where it was looked for, and that nothing was reviewed (FR-001). **Commit scope:** check 3 gains `commit` ⇔ `--commit` and the `--commit`/`--base` conflict; check 5 gains "the commit named by `--commit` exists" via `ref_exists`, naming the ref. **Phase 10:** checks 3 and 5 exist for `range` and `--pr` (T122); only the `commit` half remains
+- [ ] T082 [US3] Add `--config PATH` and `--base REF` options to `review` in `src/agentic_review/cli/app.py`, passing them into `ReviewRequest`. **Commit scope:** add `--commit REF` as well, passed into `ReviewRequest.commit`. **Phase 10:** `--config`, `--base` and `--head` exist (T124); only `--commit` remains
 - [ ] T083 [US3] Run `uv run lint-imports` and `uv run pytest`; fix until green
 
 **Checkpoint**: Stories 1–3 pass. Commit: `feat(preflight): stop before any model call on a named problem`.
@@ -204,23 +217,23 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 
 ## Phase 6: User Story 4 — Choose what gets reviewed (Priority: P4)
 
-**Goal**: staged and range scopes, default and configured exclusions, and an honest "nothing to review".
+**Goal**: staged, range and single-commit scopes, default and configured exclusions, and an honest "nothing to review".
 
-**Independent Test**: fixture with staged and unstaged edits, a two-commit branch and a changed `dist/` file → each scope reviews exactly the expected files, and `dist/` appears only as excluded.
+**Independent Test**: fixture with staged and unstaged edits, a two-commit branch and a changed `dist/` file → each scope, including one of the branch's commits on its own, reviews exactly the expected files, and `dist/` appears only as excluded.
 
 ### Tests for User Story 4 ⚠️ write first
 
-- [ ] T084 [P] [US4] Write `tests/unit/changeset/test_resolve_scopes.py`: `staged` sees only index changes (`git diff --cached`, empty tree when unborn); `range` uses the merge-base (`base...HEAD`) and ignores commits merged into `base` after the branch point; `ResolvedScope` records `baseRef` as given, `headRef == "HEAD"`, and abbreviated commit IDs in the description; `measure_new_files` reads the index blob for `staged` and the `HEAD` blob for `range` (FR-005, FR-006, research R-4, R-5)
-- [ ] T085 [US4] Write `tests/integration/test_story4_scopes_and_exclusions.py` covering US4 acceptance scenarios 1–5: staged scope stated as chosen (`wasDefaulted: false`), also when named by the config file; range reviews base→head and records both; a `dist/` file is excluded with `default:build-output` and never in the prompt the stand-in received; a configured pattern adds to the defaults; all changes excluded/deleted/binary/non-TS → `nothing-to-review`, reasons listed, stand-in called 0 times, exit 0, and a JSON report still written (FR-008, FR-010, SC-009)
+- [ ] T084 [P] [US4] Write `tests/unit/changeset/test_resolve_scopes.py`: `staged` sees only index changes (`git diff --cached`, empty tree when unborn); `range` uses the merge-base (`base...HEAD`) and ignores commits merged into `base` after the branch point; `ResolvedScope` records `baseRef` as given, `headRef == "HEAD"`, and abbreviated commit IDs in the description; `measure_new_files` reads the index blob for `staged` and the `HEAD` blob for `range` (FR-005, FR-006, research R-4, R-5). **Commit scope:** `commit` compares the named commit with its first parent (`git diff REF^1 REF`) and sees none of the commits after it, no staged or unstaged edit and no untracked file; a root commit is compared with the empty tree, every file `added`; a merge commit is compared with its first parent (add a `merge(name)` helper to `tests/support/repo_builder.py`); a rename inside the commit keeps `previous_path`; `ResolvedScope` records `kind == "commit"`, `headRef` as given (an ID, a branch name, `HEAD~1`), `baseRef` null, `wasDefaulted` false, and a description carrying the abbreviated IDs of the commit and its parent and saying when it is a root or a merge commit; `measure_new_files` reads the commit's blob, so a later edit to the same file in the working tree does not change the count. **Phase 10:** the `range` cases are in `tests/unit/changeset/test_resolve_range.py` (T113); write `staged` and `commit` here
+- [ ] T085 [US4] Write `tests/integration/test_story4_scopes_and_exclusions.py` covering US4 acceptance scenarios 1–5: staged scope stated as chosen (`wasDefaulted: false`), also when named by the config file; range reviews base→head and records both; a `dist/` file is excluded with `default:build-output` and never in the prompt the stand-in received; a configured pattern adds to the defaults; all changes excluded/deleted/binary/non-TS → `nothing-to-review`, reasons listed, stand-in called 0 times, exit 0, and a JSON report still written (FR-008, FR-010, SC-009). **Commit scope:** scenario 6 — with a later commit on top and uncommitted edits to the same file, `--commit <first commit>` puts only that commit's hunks in the prompt the stand-in received; the scope is stated as that commit and as chosen; `--commit` wins over a `scope:` named by the config file; a commit touching only excluded or non-TS files → `nothing-to-review`. **Phase 10:** scenario 2 (range) and scenarios 7–8 are covered by `tests/integration/test_pull_request_scope.py` (T116)
 
 ### Implementation for User Story 4
 
-- [ ] T086 [US4] Extend `src/agentic_review/core/changeset/resolve.py` with the `staged` and `range` scopes per research R-4, and `src/agentic_review/core/changeset/summary.py` so `measure_new_files` reads the reviewed version for each scope (`git show :path`, `git show HEAD:path`)
-- [ ] T087 [US4] Extend `src/agentic_review/agents/pipeline_agent.py` (was `core/pipeline/run.py`; moved by ADR-0009/ADR-0010): scope precedence flag → config → default with `was_defaulted` true only when neither named it, and configured `exclude` passed to `resolve` — both **already present** in the `resolve_change_set` node, so verify rather than rebuild; when `reviewable_files` is empty, skip assembly and review and build a `nothing-to-review` report, as a conditional edge `resolve_change_set → build_report` so the graph stays acyclic and the skip is visible (FR-006, FR-010). **Langfuse:** a nothing-to-review trace has no `generation`, and the resolved scope kind is a trace tag (T106)
-- [ ] T088 [US4] Add `--scope working-tree|staged|range` to `review` in `src/agentic_review/cli/app.py`
+- [ ] T086 [US4] Extend `src/agentic_review/core/changeset/resolve.py` with the `staged` and `range` scopes per research R-4, and `src/agentic_review/core/changeset/summary.py` so `measure_new_files` reads the reviewed version for each scope (`git show :path`, `git show HEAD:path`). **Commit scope:** `resolve` handles `commit` (first parent, or the empty tree when `REF^1` does not exist; no `ls-files --others`), reusing the tracked-comparison path the other scopes use; `measure_new_files` reads `git show REF:path`. No read of the working tree or the index on this path. **Phase 10:** `range` is built on `diff_branches`, and `_collect` is the shared diff-to-files path (T119); add `staged` and `commit` on it
+- [ ] T087 [US4] Extend `src/agentic_review/agents/pipeline_agent.py` (was `core/pipeline/run.py`; moved by ADR-0009/ADR-0010): scope precedence flag → config → default with `was_defaulted` true only when neither named it, and configured `exclude` passed to `resolve` — both **already present** in the `resolve_change_set` node, so verify rather than rebuild; when `reviewable_files` is empty, skip assembly and review and build a `nothing-to-review` report, as a conditional edge `resolve_change_set → build_report` so the graph stays acyclic and the skip is visible (FR-006, FR-010). **Langfuse:** a nothing-to-review trace has no `generation`, and the resolved scope kind is a trace tag (T106). **Commit scope:** `request.commit` set → scope kind `commit` ahead of the config's `scope`, `was_defaulted` false, and `ScopeRequest.commit` passed to `resolve`. **Phase 10:** `ScopeRequest.head` is passed, and a pull request opened by preflight bypasses `resolve` (T123); the nothing-to-review edge must cover that path too
+- [ ] T088 [US4] Add `--scope working-tree|staged|range|commit` to `review` in `src/agentic_review/cli/app.py` (`--commit` itself arrives with T082; `commit` is accepted here so that `--scope commit --commit REF` is valid). **Phase 10:** `--scope` exists and offers `working-tree` and `range`; add `staged` and `commit` to `OFFERED_SCOPES`
 - [ ] T089 [US4] Run `uv run lint-imports` and `uv run pytest`; fix until green
 
-**Checkpoint**: Stories 1–4 pass. Commit: `feat(changeset): add staged and range scopes and nothing-to-review`.
+**Checkpoint**: Stories 1–4 pass. Commit: `feat(changeset): add staged, range and commit scopes and nothing-to-review`.
 
 ---
 
@@ -250,7 +263,7 @@ decision the documents do not make stops and reports it (Principle I) — it is 
 - [ ] T095 Print the ignored-settings notice once to stderr in `src/agentic_review/cli/app.py` from `Reviewed.ignored_settings`, listing the dotted paths set for unbuilt capabilities (FR-003)
 - [ ] T096 Handle unexpected internal errors after preflight in `src/agentic_review/cli/app.py`: one redacted stderr line, the report path if one was written, exit 2, traceback only when `AGENTIC_REVIEW_DEBUG=1` (research R-24), with a test in `tests/unit/cli/test_internal_error.py`. Restore the `AGENTIC_REVIEW_DEBUG` lines that commit `06b8342` removed from `.env.example`. **Langfuse:** the trace is still flushed, with the root observation at level `ERROR` and the same redacted one-line message
 - [ ] T097 Run the full offline suite with no `AGENTIC_REVIEW_API_KEY` and no `LANGFUSE_*` keys set: `uv run lint-imports` and `uv run pytest` green (SC-006)
-- [ ] T098 Walk quickstart.md group B (B1–B6) by hand in a scratch repository and record any deviation. **Langfuse:** repeat B1 with the `LANGFUSE_*` keys set and confirm one trace per run appears
+- [ ] T098 Walk quickstart.md group B (B1–B6) by hand in a scratch repository and record any deviation. **Langfuse:** repeat B1 with the `LANGFUSE_*` keys set and confirm one trace per run appears. **Commit scope:** B5 now includes `review --commit nope`; also run `review --commit HEAD` and confirm the scope line names that commit
 - [ ] T099 [P] Update `specs/README.md`: feature 001 status → implemented (S-1 and SC-001 pending a real key)
 - [ ] T100 **Maintainer, needs a real key:** run `uv run python scripts/s1_tool_calling_probe.py --runs 50 --model meta/llama-3.3-70b-instruct`, read `specs/001-walking-skeleton/s1-results.md`, decide the default model and whether FR-5.6b is pulled forward, and record the one-line summary in `Docs/technical_stack.md` §7 (quickstart C1, research R-21). The existing `s1-results.md` covers only `qwen2.5-coder:7b` (0 tool calls in 50 runs); the planned default has not been probed. **Langfuse:** with keys set, tag the probe's traces `s1` and the model name so failed runs can be read call by call
 - [ ] T101 **Maintainer, needs a real key:** run quickstart C2 against a public TypeScript repository (SC-001). **Langfuse:** keep the trace link with the result
@@ -290,6 +303,54 @@ match T106, and no payload carries a secret.
 
 ---
 
+## Phase 10: Pull-request scope and a nameable range head (added 2026-10-09)
+
+**Purpose**: review a public GitHub pull request by URL, and a local branch without checking it out, from two
+explicit change-set functions: `diff_branches` (the three-dot diff) and `GitPullRequestSource` (the fetch).
+
+**Authority**: SRS v1.5 (FR-10.3a amended, FR-10.3d new, FR-4.8 extended) and
+[ADR-0011](../../Docs/adr/0011-cli-reads-a-public-pull-request.md); spec FR-005, FR-032 and Story 4 scenarios 7–8;
+[research R-25](./research.md#r-25--reading-a-pull-request-added-2026-10-09-srs-v15-adr-0011); plan D-13.
+
+**Built out of order, at the maintainer's request**: it depends only on US1, and it delivers the `range` half of
+User Stories 3 and 4 early. The **Phase 10:** notes on T079–T088 say what is left for those stories.
+
+**The git-based fetch is interim.** It is to be replaced by a `PullRequestSource` backed by the official GitHub MCP
+server. That is not a task here: it needs its own ADR (a GitHub token, an MCP client outside `core/`). Until then,
+no task may add to `core/changeset/pull_request.py` a feature the MCP server already provides, and nothing outside
+`core/changeset/` may learn how a pull request was fetched.
+
+**Independent Test**: with a local repository served over `file://` standing in for GitHub, `review --pr <URL>`
+run from a directory that is not a repository reviews exactly what the pull request changed since it left the
+default branch, honours no configuration from it, and leaves no temporary directory behind — and a
+`PullRequestSource` that never touches git yields the same kind of report.
+
+### Tests for Phase 10 ⚠️ write first
+
+- [X] T112 [P] Extend `tests/support/repo_builder.py` with `config`, `update_ref`, `delete_branch`, `rev_parse`; create `tests/support/pull_request_remote.py` — a repository whose pull request exists only under `refs/pull/7/head`, with `uploadpack.allowFilter` set, a commit on `main` after the branch point, a `dist/` change and a hostile `.agentic-review.yml` inside the pull request; expose it as a session-scoped `pull_request_remote` fixture in `tests/conftest.py` (research R-25)
+- [X] T113 [P] Write `tests/unit/changeset/test_resolve_range.py`: three-dot semantics (what the base did after the branch point is absent); a head that is not checked out; `head` defaulting to `HEAD`; uncommitted and untracked files not part of a range; renames; exclusions; `ResolvedScope` fields and description; line counts from the head blob, not the working tree; `diff_branches` on its own; unrelated histories have no merge base (FR-10.3a, research R-4)
+- [X] T114 [P] Write `tests/unit/changeset/test_pull_request.py`: the URL table (accepted and rejected, including an argument-injection attempt); the clone argv carries `--filter=blob:none --no-checkout` and no credential helper; git cannot prompt; the clone has only `.git` and is missing blobs; the change set, scope and line counts of the fixture pull request; a named base; `close` removes the clone, read-only pack files included; unknown pull request, unknown base and unreachable repository each raise `PullRequestError` naming the problem and leave nothing behind (FR-10.3d, research R-25)
+- [X] T115 [P] Write `tests/unit/pipeline/test_preflight.py` (create `tests/unit/pipeline/__init__.py`) for what Phase 10 adds: `range` ⇔ `--base`, `--head` only with `range`, unknown base and head named, no common history, unborn head, an option-shaped ref refused; `--pr` needs no repository, passes `--base` to the source, rejects `--scope` and `--head`, names a malformed URL before anything is fetched; a missing credential never costs a fetch; a `PullRequestError` becomes a redacted preflight failure; configuration is taken from `--config` only. **T079 completes this file** for User Story 3
+- [X] T116 Write `tests/integration/test_pull_request_scope.py` through `run_review` and the CLI: Story 4 scenarios 7 and 8; a finding past the end of the head version is rejected; configuration inside the pull request, and in the working directory, is not honoured while `--config` is; an unknown pull request exits 3 with the stand-in called 0 times; the clone is gone after success, after a preflight failure and after a later stage raises; **a source that never touches git produces the same kind of report**; every report passes the `report_assertions` helpers. Extend `tests/unit/findings/test_schema.py` (the scope kinds) and `tests/unit/config/test_credentials.py` (no local repository)
+
+### Implementation for Phase 10
+
+- [X] T117 Record the decision before the code: `Docs/adr/0011-cli-reads-a-public-pull-request.md` and its row in `Docs/adr/README.md`; SRS v1.5 (FR-10.3a, FR-10.3d, FR-4.8, §1.2, §7, Appendix B); `Docs/design/02-domain-model.md` §3.1 and `04-contracts.md` §6; this feature's spec, contracts, data model, research R-4 and R-25, plan D-13; `CLAUDE.md`
+- [X] T118 [P] Extend `src/agentic_review/core/changeset/_git.py`: optional `env` and `timeout` on `run_git`/`run_git_bytes`; a timeout is raised as `GitError`. Still the only module that runs git
+- [X] T119 Extend `src/agentic_review/core/changeset/resolve.py`: move the shared diff-to-files body into `_collect`; add `BranchDiff`, `diff_branches(repo_root, base, head, exclude)` and `have_merge_base`; `resolve` handles `range` through it. `ScopeRequest` gains `head` (`core/changeset/model.py`); `measure_new_files` reads the head blob for `range` and `pull-request` (`core/changeset/summary.py`). `staged` keeps raising until T086
+- [X] T120 Create `src/agentic_review/core/changeset/pull_request.py`: `PullRequestRef`, `parse_pull_request_url`, `PullRequestError`, the `PullRequestSource` and `OpenedPullRequest` protocols, `clone_arguments`, `discard_workspace`, and `GitPullRequestSource` per research R-25; the fetch timeout labelled `PLACEHOLDER`; the module docstring states that it is interim and what replaces it
+- [X] T121 [P] `ScopeKind` in `src/agentic_review/core/findings/report.py` gains `pull-request` (`ScopeSetting` does not: it is never a config value); `find_credential` in `core/config/credentials.py` accepts no repository root
+- [X] T122 Extend `src/agentic_review/core/pipeline/preflight.py`: keyword arguments `scope`, `base`, `head`, `pr`, `pull_requests`; check 1 accepts a pull request URL in place of a repository; check 2 never reads a pull request's or the working directory's file for `--pr`; check 3 for `range` and `--pr`; check 5 for range refs and `source.open`. `PreflightOk.repo_root` may be None and it gains `pull_request`
+- [X] T123 Extend `src/agentic_review/agents/pipeline_agent.py`: `ReviewRequest.head` and `.pr`; `PipelineDeps.pull_requests` (default `GitPullRequestSource`) and the matching `run_review` keyword; `_resolve_change_set` uses the opened pull request when there is one; `run_review` closes it in a `finally`. The graph is unchanged. **Langfuse:** the opened pull request is pipeline state and so is traced — it holds a path and ref names, never a secret
+- [X] T124 Extend `src/agentic_review/cli/app.py`: `--scope` (only built values are offered: `working-tree`, `range`; anything else exits 3), `--base`, `--head`, `--pr`, `--config`
+- [X] T125 Add section "5 · Review a branch range and a pull request" to `notebooks/run_review_quickstart.ipynb`: settings (`RANGE_BASE`, `RANGE_HEAD`, `PR_URL`, `PR_BASE`, all `None` so "Run All" skips them), a range run, a pull-request run that confirms no temporary clone is left, and a preflight failure on purpose. Saved without outputs
+- [X] T126 [P] Document the new flags in `Docs/operation_guidelines.md`, plainly including that `--pr` contacts github.com and that the pull request's diff is sent to the model provider
+- [ ] T127 **Maintainer, needs a real key and network:** run `uv run --env-file .env agentic-review review --pr <URL of a public TypeScript pull request>` from outside any repository; confirm the scope line names the pull request and its base, and that no `agentic-review-pr-*` directory is left in the temp folder. Then run the notebook's section 5
+
+**Checkpoint**: `uv run python -m pytest` and the import contracts green. Commit: `feat(changeset): review a public pull request and a named branch range`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies
@@ -305,11 +366,15 @@ flowchart LR
     US2 & US3 & US4 & US5 --> P8["Phase 8<br/>Polish"]
     US1 -.->|"T054 script exists"| S1["T100 S-1 run<br/>(maintainer)"]
     US1 --> P9["Phase 9<br/>Langfuse"]
+    US1 --> P10["Phase 10 ✅<br/>PR scope · range head"]
+    P10 -.->|"range half already built"| US3
+    P10 -.->|"range half already built"| US4
     P9 -.->|"recommended before"| US2
 
     style US1 fill:#fff4e0
     style S1 fill:#f2f2f2
     style P9 fill:#eef4ff
+    style P10 fill:#e8f7e8
 ```
 
 - **Setup → Foundational → US1** is strictly sequential.
@@ -317,6 +382,10 @@ flowchart LR
   (`agents/pipeline_agent.py`, `cli/app.py`), so run them one at a time, in priority order.
 - **Phase 9 (Langfuse)** depends only on US1. Doing it before US2 lets every later phase check its **Langfuse:**
   note as it lands. Order within it: T104, T107 (tests) → T102, T103, T105 → T106 → T108 → T109.
+- **T111 (the `commit` scope's types) comes first in US3**: T079–T082 and every **Commit scope:** note build on it.
+- **Phase 10 (pull-request scope)** depended only on US1 and is done, apart from the maintainer's live run (T127).
+  It built `--scope`, `--base`, `--head`, `--config` and `range` resolution, so US3 and US4 are smaller than
+  their task text reads: follow the **Phase 10:** notes.
 - **US5's integration test** reuses scenarios from US2 and US4, so it should land after them (it is P5 anyway).
 - **T100 (S-1)** needs only T053–T054. It blocks SC-001 and the default model choice, not any other task.
 
@@ -366,11 +435,12 @@ Every FR and SC in spec.md maps to at least one task.
 
 | Requirement | Tasks |
 |---|---|
-| FR-001 | T060, T079–T081 |
+| FR-001 | T060, T079–T081, T111, T115, T122 |
 | FR-002 | T024, T025, T028, T030, T080 |
 | FR-003 | T025, T030, T094, T095 |
 | FR-004 | T008, T026, T029, T031, every integration test via `assert_no_canary` |
-| FR-005, FR-006 | T034, T040, T048, T084–T088 |
+| FR-005, FR-006 | T034, T040, T048, T082, T084–T088, T110, T111, T113, T116, T119, T123, T124 |
+| FR-032 | T112, T114–T117, T120, T122, T123 |
 | FR-007 | T032, T034, T036, T039, T040 |
 | FR-008 | T033, T038, T040, T085, T087 |
 | FR-009 | T032, T034, T035, T041, T094 |

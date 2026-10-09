@@ -22,10 +22,13 @@ agentic-review --version
 
 | Option | Value | Default | Rule |
 |---|---|---|---|
-| `--scope` | `working-tree \| staged \| range` | config `scope`, else `working-tree` | FR-005. The resolved scope is stated in both outputs; `wasDefaulted` is true only when neither this flag nor the config named it |
-| `--base REF` | a git ref | — | **Required** when the scope is `range`, and rejected otherwise. Missing → exit 3 naming `--base`. Unknown ref → exit 3 naming the ref |
+| `--scope` | `working-tree \| staged \| range \| commit` | config `scope`, else `working-tree` | FR-005. The resolved scope is stated in both outputs; `wasDefaulted` is true only when neither this flag, nor `--commit`, nor `--pr`, nor the config named it. **A value is offered only once its scope is built**: `working-tree` and `range` today; `staged` and `commit` are refused with exit 3 until User Story 4 |
+| `--base REF` | a git ref | — | **Required** when the scope is `range`. With `--pr`, optional: the branch the pull request targets. Rejected with any other scope. Missing → exit 3 naming `--base`. Unknown ref → exit 3 naming the ref |
+| `--head REF` | a git ref | `HEAD` | `range` only: the ref reviewed, so a branch can be reviewed without checking it out. Rejected with any other scope. Unknown ref → exit 3 naming the ref. Refs that share no history → exit 3 |
+| `--pr URL` | `https://github.com/<owner>/<repo>/pull/<n>` | — | Reviews a **public** GitHub pull request: its head against the branch it targets — the repository's default branch unless `--base` names another (R-25). **Selects the `pull-request` scope by itself**; with `--scope` or `--head` → exit 3. Needs no local repository and reads no file from the current directory. Nothing from the pull request is executed and no configuration is read from it (SRS FR-10.3d). Malformed URL, repository unreachable, pull request or base not found → exit 3 naming it |
+| `--commit REF` | a git ref that resolves to a commit | — | Reviews what that one commit introduced, against its first parent (R-4). **Selects the `commit` scope by itself**, over the config's `scope`; `--scope commit` may be written too but is not needed. `--scope commit` without it → exit 3 naming `--commit`. With any other `--scope`, or with `--base` → exit 3 naming `--commit`. Unknown ref → exit 3 naming the ref. The config file cannot select this scope: a commit is named per run |
 | `--json [PATH]` | optional path | off | No value, or `-` → the report on **stdout only**. With a path → written to that file (R-18) |
-| `--config PATH` | file path | `<repo root>/.agentic-review.yml` | An explicit path that does not exist → exit 3 |
+| `--config PATH` | file path | `<repo root>/.agentic-review.yml`; with `--pr`, **none** — the built-in defaults | An explicit path that does not exist → exit 3. The only way to give settings to a `--pr` review |
 | `--ceiling N` | integer ≥ 1 | config `agent.toolCallCeiling` (25, **placeholder, TBD-8**) | FR-017 |
 
 Deferred and **not offered**: `--depth`, `--no-checks` (both 002/004), `--investigate` (005).
@@ -74,11 +77,14 @@ Checks run in this order and stop at the first failure. The model is never calle
 
 | Order | Check | Message names |
 |---|---|---|
-| 1 | Inside a git repository | The directory checked |
+| 1 | Inside a git repository — or, with `--pr`, the URL is a GitHub pull request URL | The directory checked, or the URL and the form expected |
 | 2 | Config file valid (if present, or if `--config` was given) | The file, the dotted field path, and the problem |
-| 3 | Scope arguments coherent (`range` ⇔ `--base`) | The option |
+| 3 | Scope arguments coherent (`range` ⇔ `--base`; `--head` only with `range`; `commit` ⇔ `--commit`; `--pr` excludes `--scope` and `--head`) | The option |
 | 4 | Credential available | `AGENTIC_REVIEW_API_KEY`, and the user-level credential file path for this OS |
-| 5 | Range base exists, and `HEAD` is not unborn for `range` | The ref |
+| 5 | Range base and head exist and share history, and `HEAD` is not unborn for `range`; the commit named by `--commit` exists; **the pull request named by `--pr` can be read**, with its base branch | The ref, or the pull request and what could not be reached |
+
+Check 5 is the only one that may use the network, and only for `--pr`. It is last on purpose: a missing credential
+or a mistyped option never costs a clone. git is never allowed to prompt for a login while it runs.
 
 Example:
 
