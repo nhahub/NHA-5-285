@@ -157,7 +157,10 @@ def build_review_graph(
             result = validate_call(call["name"], args, run.context.material)
             if isinstance(result, Accepted):
                 finding = run.accounting.accept(result.draft, turn_index=run.turn_index)
-                observation = ToolObservation(status="ok", content=f"accepted as {finding.id}")
+                content = f"accepted as {finding.id}"
+                if result.note:
+                    content = f"{content}; {result.note}"
+                observation = ToolObservation(status="ok", content=content)
             else:
                 rejected += 1
                 observation = ToolObservation(status="error", reason=result.reason)
