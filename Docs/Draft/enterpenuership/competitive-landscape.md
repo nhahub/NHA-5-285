@@ -20,6 +20,8 @@ Note that the CLI is not a differentiator — Greptile, CodeRabbit and Claude Co
 
 **Sequencing caveat (2026-09-08).** GitHub integration is now deferred to **v3** ([SRS §2.3.3](./agentic-code-review-srs.md)), so v1 and v2 ship the CLI alone. Read the positioning below as describing the product at v3. Until then the project competes only where every tool in this document also offers a local mode — which is the weakest ground of the three differentiators, since the execution-backed claim thins on a machine where the developer can already run their own tests. This is a deliberate engineering sequence, not a repositioning; it does mean the competitive claim is not testable against real adopters until v3.
 
+**Business-model caveat (2026-10-03).** The project is now **open core** ([canvas §5](./003-business-model-canvas.md)): the command-line tool and its engine stay open source and free, and revenue is planned from a **hosted review service** priced at variable cost plus a markup. Wherever this document says "free", "zero cost" or "no per-seat cost", it describes the open-source tool, which an adopter runs on their own machine or runner. The hosted service is paid, its billing unit is not decided, and it is not designed yet, so nothing below positions it against anything.
+
 ---
 
 ## Tier 1 — Full-context AI reviewers (direct competitors)
@@ -72,7 +74,7 @@ A workflow alternative that attacks the **same root problem we state** — the A
 - **Cost as an architectural driver** — Claude Code's $15–25/review and Greptile's credit metering prove the constraint is real, not theoretical.
 
 ### Genuine differentiators (lead with these, not features)
-1. **Open-source, self-hostable GitHub Action with no per-seat cost.** The Tier 1 tools have OSS-free *programs*, but the engine is a hosted black box. Ours is inspectable and forkable end to end.
+1. **Open-source, self-hostable GitHub Action with no per-seat cost.** The Tier 1 tools have OSS-free *programs*, but the engine is a hosted black box. Ours is inspectable and forkable end to end. That is the tool an adopter runs themselves; the hosted service is the paid tier (see the business-model caveat above).
 2. **Deterministic, execution-backed verification.** Competitors verify agentically (expensive, non-reproducible). We verify by running the actual test suite (cheap, auditable, reproducible). This is our strongest technical story.
 3. **Fresh-context decoupling as a stated anti-bias principle** — a deliberate stance against the writer/reviewer convergence the Cursor–Graphite deal represents.
 
@@ -80,6 +82,7 @@ A workflow alternative that attacks the **same root problem we state** — the A
 - **Feature breadth.** Our v1 is roughly CodeRabbit's entry tier against a product with a massive install base. We will not win on breadth, and shouldn't try.
 - **Quality gap.** A free NIM-tier model without agentic verification is very likely noisier than a frontier-model-with-verification reviewer. The NFR pass should set an explicit **accuracy / false-positive** target, not only latency and cost targets. The pattern-library regression set (FR-6.2b) is currently the main guard against shipping a noisy reviewer — and noise is what kills adoption of tools in this category.
 - **The test-suite assumption.** "Execution-backed" only adds value on repositories with a runnable test suite. On the median public TS/JS repo that may not hold, which erodes differentiator #2 for part of the target audience. Worth measuring the size of that gap before making execution the headline feature.
+- **The paid tier (added 2026-10-03).** Under open core the hosted service has to be worth paying for next to our own free tool, and next to rivals' free hosted tiers: Greptile's Starter plan, and the free open-source plans of CodeRabbit and Qodo. What it adds is not stated yet.
 
 ---
 
@@ -88,7 +91,7 @@ A workflow alternative that attacks the **same root problem we state** — the A
 | | Agentic Code Review (this project) | Tier 1 hosted reviewers | Claude Code Review | Danger/DangerJS | Graphite |
 |---|---|---|---|---|---|
 | Category | Open-source AI reviewer | Hosted AI reviewer | Managed multi-agent reviewer | CI process linter | Stacked-diffs workflow |
-| Cost model | Free / single low-cost provider | Per-seat subscription | Per-review token usage | Free (MIT) | Per-seat subscription |
+| Cost model | Open-source tool: free, on a single low-cost provider. Hosted service: variable cost + markup (planned) | Per-seat subscription | Per-review token usage | Free (MIT) | Per-seat subscription |
 | Verification | Deterministic (real test run) | Agentic / model-based | Agentic behavior check | None (rule-based) | Agentic (add-on) |
 | Openness | Fully open, forkable | Closed engine | Closed | Fully open | Closed |
 | Bias stance | Decoupled fresh-context agent | Varies | Fresh agents | N/A | Converging with writer (Cursor) |
