@@ -27,6 +27,7 @@ Everything in [`Draft/`](./Draft/) is **non-normative**. It records analysis, ra
 | [`Draft/system-analysis/`](./Draft/system-analysis/system_analysis.md) | System analysis of v1: actors and use cases, requirement and domain models, workflows, a degradation and traceability matrix, and open questions raised against the specification. |
 | [`Draft/Agentic_Code_Review_Problem_Definition_v1.md`](./Draft/Agentic_Code_Review_Problem_Definition_v1.md) | Problem definition, personas, and the commit-first decision. |
 | [`Draft/competitive-landscape.md`](./Draft/competitive-landscape.md) | Where this project sits against existing tools. |
+| [`Draft/enterpenuership/004-market-study.md`](./Draft/enterpenuership/004-market-study.md) | Market study: sizing, the category leader, competitors, demand signals and academic evidence, each figure with a confidence label. |
 | [`Draft/business-model-canvas.md`](./Draft/business-model-canvas.md) | Business Model Canvas. Marks every block where no information exists, and names the three riskiest. |
 | [`Draft/tool-reference.md`](./Draft/tool-reference.md) | Neutral descriptions of seven comparable tools. |
 | [`Draft/feature-inventory.md`](./Draft/feature-inventory.md) | Feature tables with complexity estimates, planned and candidate. |
