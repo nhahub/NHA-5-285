@@ -10,7 +10,8 @@ Gartner's forecasts point one way: almost every enterprise engineer will use AI 
 | --- | --- | --- | --- | --- |
 | 2027 | Over 65% of engineering teams using agentic coding will treat IDEs as optional, moving control, governance and validation to automated platforms | Review moves out of the editor and into automated pipelines, where a GitHub Action runs | [Gartner press release, 20 May 2026](https://www.gartner.com/en/newsroom/press-releases/2026-05-20-gartner-says-the-market-for-enterprise-ai-coding-agents-is-entering-a-new-phase-of-expansion-and-competitive-realignment) | A |
 | 2028 | 90% of enterprise software engineers will use AI code assistants, up from under 14% in early 2024 | The volume of AI-written code that needs review keeps growing | Gartner Magic Quadrant for AI Code Assistants (Sep 2025), as quoted by [GitHub](https://github.blog/ai-and-ml/github-copilot/gartner-positions-github-as-a-leader-in-the-2025-magic-quadrant-for-ai-code-assistants-for-the-second-year-in-a-row/) | B, quoted by a vendor rated in the report |
-| 2028 | AI coding costs will exceed the average developer's salary, driven by token use and consumption-based pricing | Buyers will favour tools with predictable costs and cheap-model options | 
+| 2028 | AI coding costs will exceed the average developer's salary, driven by token use and consumption-based pricing | Buyers will favour tools with predictable costs and cheap-model options | [Gartner press release, 24 Jun 2026](https://www.gartner.com/en/newsroom/press-releases/2026-06-24-gartner-predicts-ai-coding-costs-will-surpass-average-developer-salary-by-2028-as-token-consumption-surges) | A |
+
 
 Gartner publishes no size for the AI code review market; these forecasts give direction, not dollars. Its cost advice is to send simple, high-frequency tasks to smaller models and set token limits, which supports a review tool built on one low-cost model with a capped number of comments.
 
