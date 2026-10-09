@@ -42,6 +42,7 @@ from agentic_review.agents.review_port import build_review_port, provider_for
 from agentic_review.core.assembly.budget import BudgetExhausted
 from agentic_review.core.assembly.prompt import assemble
 from agentic_review.core.changeset.model import ChangeSet, ScopeRequest
+from agentic_review.core.changeset.pull_request import GitPullRequestSource, PullRequestSource
 from agentic_review.core.changeset.resolve import resolve
 from agentic_review.core.changeset.summary import measure_new_files, summarise
 from agentic_review.core.config.credentials import (
@@ -67,6 +68,8 @@ class ReviewRequest:
     cwd: Path
     scope: ScopeKind | None = None  # None = not given on the command line
     base: str | None = None
+    head: str | None = None  # range only; None = HEAD
+    pr: str | None = None  # a GitHub pull request URL; selects the pull-request scope by itself
     config_path: Path | None = None
     ceiling: int | None = None
 
@@ -88,6 +91,8 @@ class PipelineDeps:
 
     credentials: CredentialSources
     port_factory: PortFactory
+    pull_requests: PullRequestSource = field(default_factory=GitPullRequestSource)
+    """How a pull request is read. Today git transport; later the GitHub MCP server (ADR-0011)."""
 
 
 @dataclass
@@ -128,7 +133,16 @@ class PipelineState(TypedDict):
 def _preflight(state: PipelineState, runtime: Runtime[PipelineDeps]) -> PipelineState:
     run = state["run"]
     with run.timer.stage("preflight"):
-        checked = preflight(run.request.cwd, run.request.config_path, runtime.context.credentials)
+        checked = preflight(
+            run.request.cwd,
+            run.request.config_path,
+            runtime.context.credentials,
+            scope=run.request.scope,
+            base=run.request.base,
+            head=run.request.head,
+            pr=run.request.pr,
+            pull_requests=runtime.context.pull_requests,
+        )
     if isinstance(checked, PreflightFailure):
         run.result = checked
         return {"run": run}
@@ -150,11 +164,18 @@ def _resolve_change_set(state: PipelineState) -> PipelineState:
     assert run.checked is not None
     settings = run.checked.loaded.settings
     with run.timer.stage("changeSet"):
+        pull_request = run.checked.pull_request
+        if pull_request is not None:  # opened by preflight; the source decides how the change is read
+            run.change_set = pull_request.change_set(settings.exclude)
+            run.change_summary = summarise(run.change_set)
+            run.line_counts = pull_request.line_counts(run.change_set)
+            return {"run": run}
+        assert run.checked.repo_root is not None
         scope_kind = run.request.scope or settings.scope
         was_defaulted = run.request.scope is None and not run.checked.loaded.scope_from_file
         run.change_set = resolve(
             run.checked.repo_root,
-            ScopeRequest(kind=scope_kind, base=run.request.base),
+            ScopeRequest(kind=scope_kind, base=run.request.base, head=run.request.head),
             settings.exclude,
             was_defaulted=was_defaulted,
         )
@@ -319,9 +340,19 @@ def run_review(
     clock: Callable[[], float] = time.monotonic,
     now: Callable[[], datetime] = utc_now,
     port_factory: PortFactory | None = None,
+    pull_requests: PullRequestSource | None = None,
 ) -> PreflightFailure | Reviewed:
     run = PipelineRun(request=request, clock=clock, now=now)
-    deps = PipelineDeps(credentials=credential_sources(env), port_factory=port_factory or build_review_port)
-    _PIPELINE.invoke({"run": run}, context=deps)
+    deps = PipelineDeps(
+        credentials=credential_sources(env),
+        port_factory=port_factory or build_review_port,
+        pull_requests=pull_requests or GitPullRequestSource(),
+    )
+    try:
+        _PIPELINE.invoke({"run": run}, context=deps)
+    finally:
+        # A pull request opened by preflight holds a temporary clone; it goes whatever happened after.
+        if run.checked is not None and run.checked.pull_request is not None:
+            run.checked.pull_request.close()
     assert run.result is not None
     return run.result

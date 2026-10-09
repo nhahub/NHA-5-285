@@ -47,6 +47,20 @@ def _isolate_environment(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pyte
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(home / ".gitconfig-none"))
 
 
+@pytest.fixture(scope="session")
+def pull_request_remote(tmp_path_factory: pytest.TempPathFactory) -> object:
+    """One read-only stand-in for a GitHub repository with an open pull request, shared by every test that clones it.
+
+    Session-scoped because building it costs a dozen git commands; nothing writes to it after this.
+    """
+    from tests.support.pull_request_remote import build_pull_request_remote
+
+    with pytest.MonkeyPatch.context() as patch:  # the same isolation `_isolate_environment` gives each test
+        patch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+        patch.setenv("GIT_CONFIG_GLOBAL", str(tmp_path_factory.mktemp("remotehome") / ".gitconfig-none"))
+        return build_pull_request_remote(tmp_path_factory.mktemp("upstream") / "widgets")
+
+
 @pytest.fixture
 def canary_env(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
     """Sets the planted credential and returns the environment mapping to hand to the pipeline."""
