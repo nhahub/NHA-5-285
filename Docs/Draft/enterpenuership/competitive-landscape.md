@@ -5,6 +5,8 @@ This document positions **Agentic Code Review** against existing tools in and ar
 For plain, non-comparative descriptions of each tool, see [`tool-reference.md`](./tool-reference.md).
 
 > Snapshot as of September 2026. Pricing and features change quickly; re-verify before relying on specifics.
+>
+> **Re-checked 2026-10-10.** How each rival checks a finding was re-read on its own pages, and the verification claims below did not hold as written. Read [Differentiator re-check](#differentiator-re-check-2026-10-10) before the sections on differentiators and the positioning summary.
 
 ## How to read this
 
@@ -20,7 +22,7 @@ Note that the CLI is not a differentiator — Greptile, CodeRabbit and Claude Co
 
 **Sequencing caveat (2026-09-08).** GitHub integration is now deferred to **v3** ([SRS §2.3.3](./agentic-code-review-srs.md)), so v1 and v2 ship the CLI alone. Read the positioning below as describing the product at v3. Until then the project competes only where every tool in this document also offers a local mode — which is the weakest ground of the three differentiators, since the execution-backed claim thins on a machine where the developer can already run their own tests. This is a deliberate engineering sequence, not a repositioning; it does mean the competitive claim is not testable against real adopters until v3.
 
-**Business-model caveat (2026-10-03).** The project is now **open core** ([canvas §5](./003-business-model-canvas.md)): the command-line tool and its engine stay open source and free, and revenue is planned from a **hosted review service** priced at variable cost plus a markup. Wherever this document says "free", "zero cost" or "no per-seat cost", it describes the open-source tool, which an adopter runs on their own machine or runner. The hosted service is paid, its billing unit is not decided, and it is not designed yet, so nothing below positions it against anything.
+**Business-model caveat (2026-10-03).** The project is now **open core** ([canvas §5](./003-business-model-canvas.md)): the command-line tool and its engine stay open source and free, and revenue is planned from a **hosted review service** priced at variable cost plus a markup. Wherever this document says "free", "zero cost" or "no per-seat cost", it describes the open-source tool, which an adopter runs on their own machine or runner. The hosted service is paid and it is not designed yet, so nothing below positions it against anything. Its price was decided on 2026-10-10: $22 per seat per month, under CodeRabbit's $24, with Greptile's $30 treated as an anomaly.
 
 ---
 
@@ -74,6 +76,9 @@ A workflow alternative that attacks the **same root problem we state** — the A
 - **Cost as an architectural driver** — Claude Code's $15–25/review and Greptile's credit metering prove the constraint is real, not theoretical.
 
 ### Genuine differentiators (lead with these, not features)
+
+*Superseded in part on 2026-10-10: differentiator 2 is withdrawn as worded, and 1 and 3 are narrowed. See the re-check below.*
+
 1. **Open-source, self-hostable GitHub Action with no per-seat cost.** The Tier 1 tools have OSS-free *programs*, but the engine is a hosted black box. Ours is inspectable and forkable end to end. That is the tool an adopter runs themselves; the hosted service is the paid tier (see the business-model caveat above).
 2. **Deterministic, execution-backed verification.** Competitors verify agentically (expensive, non-reproducible). We verify by running the actual test suite (cheap, auditable, reproducible). This is our strongest technical story.
 3. **Fresh-context decoupling as a stated anti-bias principle** — a deliberate stance against the writer/reviewer convergence the Cursor–Graphite deal represents.
@@ -86,12 +91,81 @@ A workflow alternative that attacks the **same root problem we state** — the A
 
 ---
 
+## Differentiator re-check (2026-10-10)
+
+**This section supersedes the verification claims above and in the positioning summary.** It was written for the final pitch (task 2 of the rework list), after the reviewer became the one audience and the tagline became "Review that shows its evidence". Each rival's own pages were read on 2026-10-10. Everything quoted from a vendor is that vendor's claim; none of it was tested.
+
+### What each rival says it does
+
+| Tool | How a finding is checked | What the reader is shown | Source |
+|---|---|---|---|
+| CodeRabbit | "CodeRabbit also runs verification scripts on the review comments provided by the LLMs", and "These verification scripts are generated in the sandbox". Linters and scanners "run automatically in secure sandboxed environments". "any low value feedback is automatically filtered out and not passed on to the user" | "You can see the code definitions that were used in the review comment." Tool output is attached under a "Review details" comment | [Vendor blog, 2025-07-17](https://www.coderabbit.ai/blog/context-engineering-ai-code-reviews); [tools documentation](https://docs.coderabbit.ai/tools) |
+| Greptile | TREX, in public beta since 2026-06-15: "Greptile doesn't just review your PR, it writes and runs targeted tests in a sandbox", which "runs against the services, dependencies, and framework your repo already uses, not a generic mock environment." | It "attaches logs, screenshots, traces, scripts, or videos when something fails." Review summaries carry a "Confidence score and a short verdict at the top" | [Changelog](https://www.greptile.com/changelog), entries of 2026-06-15 and 2026-09-16 |
+| Qodo | "a judge agent merges their findings, removes duplicates, and filters out anything low-confidence". Nothing on the page says it runs tests or executes code | "every finding states what needs attention, why it matters, and how to fix it, ranked by severity" | [Code review documentation](https://docs.qodo.ai/code-review) |
+| Claude Code Review | "a verification step checks candidates against actual code behavior to filter out false positives" | "Findings include a collapsed **Why this was flagged** section that you can expand to read why Claude flagged the issue and how it verified the problem." | [Documentation](https://code.claude.com/docs/en/code-review) |
+
+Not found on any of these pages: a statement that the tool runs the repository's own existing test suite, or that it reports which files it did not cover.
+
+### What this does to our three differentiators
+
+| Claim made above | Built today? | Does a rival already do it? | Verdict |
+|---|---|---|---|
+| "Competitors verify agentically… We verify by running the actual test suite" (differentiator 2; "Verification" row of the summary) | No. Today's build runs no checks | Greptile writes and runs tests in a sandbox, and CodeRabbit runs verification scripts and linters in one. Neither is "a model only" | **Withdrawn as worded.** What is left is narrower: the project's own existing tests and type-check, run once by our code and never by the model (FR-4.6, FR-4.7). It is specified, not built, and it must be said that way |
+| "Review that shows its evidence" (the tagline; FR-5.2c) | Yes. Every finding carries a typed evidence reference, checked at the call boundary. Today the evidence is the part of the change the finding rests on | Claude Code Review shows "how it verified the problem"; Greptile attaches logs and traces; CodeRabbit shows the definitions it used | **True, but shared.** Showing evidence is not ours alone |
+| "Open-source… inspectable and forkable end to end" (differentiator 1) | The code is public. The repository has no LICENSE file yet, so it is not yet open source in the legal sense | Qodo's original engine, PR-Agent, is MIT-licensed and "a community-maintained legacy project of Qodo": "Qodo has donated PR-Agent to the open-source community." ([repository](https://github.com/qodo-ai/pr-agent)). CodeRabbit, Greptile and Claude Code Review are closed | **Holds against three of four**, once a licence is added |
+| Fresh-context reviewer, separate from the code-writing agent (differentiator 3) | Yes, by construction: the tool only reviews | Claude Code Review also uses fresh agents | **Weak.** A design stance, not a reason to choose us |
+
+### What is ours, stated as narrowly as the evidence allows
+
+1. **Nothing is dropped silently.** A finding the tool cannot back with evidence is kept and marked "unverified", with a reason (FR-5.2c). Three of the four rivals describe the opposite design: unconfirmed or low-confidence findings are filtered out before the reader sees them (the CodeRabbit, Qodo and Claude Code Review quotations above). This is built. Whether a reviewer prefers a labelled finding to a filtered one is untested, and a rival would call the filtering a feature.
+2. **The review reports its own gaps.** It says which files got no finding, that no checks ran and that no related context was gathered (FR-11.2; the degradations on the MVP slide). No rival page read here describes this. An absence on four pages is weak evidence; it is not proof that they do not do it.
+3. **Price: a small difference, not a reason to choose us.** The hosted service is priced at $22 per seat per month, $2 under CodeRabbit (decided 2026-10-10; see [`0052-unit-economics-and-financials.md`](./0050-financial-planning/0052-unit-economics-and-financials.md)). It is the average of CodeRabbit's $24 and Graphite's $20; the founder ruled that it stay under CodeRabbit's price and that Greptile's $30 is an anomaly.
+4. **An engine that can be read and forked**, once the licence is in place.
+
+**Where rivals are ahead today, said plainly.** They verify more than our build does: ours makes one model pass and runs nothing. A reviewer choosing on verification alone would not choose today's build.
+
+### Prices, side by side
+
+| Tool | Unit | Price | A review costs |
+|---|---|---|---|
+| CodeRabbit | Per developer per month | $24, billed annually (Essentials) | Not priced per review in the plan; "pay-as-you-go reviews" are listed as an add-on, with no price in our tool reference |
+| Greptile | Per seat per month, with credits | $30 per seat with 50 credits; "Extra credits cost $1 each"; a standard review is 1 credit and a TREX review 3 | Standard: $0.60 inside the plan (Calculated: $30 ÷ 50), $1.00 beyond it. With tests run: $1.80 and $3.00 (Calculated: × 3) |
+| Claude Code Review | Per review, by token usage | "Each review averages $15-25 in cost" | $15–25 |
+| Agentic Code Review | Per seat per month | $22, the average of CodeRabbit's $24 and Graphite's $20 | About $0.88 at 25 reviews a month (Calculated: $22 ÷ 25). Our estimated cost of a review is $0.0456 to $0.0775 |
+
+Sources: [`tool-reference.md`](../tool-reference.md) for CodeRabbit and for Greptile's credits per review; [Greptile's pricing page](https://www.greptile.com/pricing) and the Claude Code Review documentation, both read 2026-10-10. The four tools do different amounts of work for the price: Claude Code Review runs many agents for about 20 minutes, and ours makes one model pass.
+
+### Who is already reviewing pull requests, in our own sample
+
+From the ten public TypeScript repositories measured in [`review-volume-report.md`](./0050-financial-planning/0051-cost-structure/review-volume-report.md) §2.5: 5,711 of the 7,670 human pull requests opened in September 2026 were reviewed by a bot account. Counted by account (Calculated from the same data):
+
+| Reviewer account | Pull requests reviewed | Share of the 7,670 | Where |
+|---|---|---|---|
+| A reviewer bundled with the code host, left unnamed in these documents by an earlier decision | 2,481 | 32.3% | Mostly one repository |
+| `cubic-dev-ai` (Cubic) | 2,064 | 26.9% | n8n (1,676 of 1,714) and Twenty (388) |
+| `greptile-apps` (Greptile) | 901 | 11.7% | Twenty (901 of 1,482) |
+| `coderabbitai` (CodeRabbit) | 521 | 6.8% | Supabase (490 of 892) and tRPC (31 of 47) |
+
+- **Cubic is a rival this document does not cover.** It reviewed more of the sample than Greptile and CodeRabbit together. Its pricing page lists $40, $99 and $200 per developer per month ([cubic.dev/pricing](https://www.cubic.dev/pricing), read 2026-10-10) and does not say how it checks a finding. `[MISSING: a profile of Cubic]`
+- **Neither Qodo nor Claude Code Review appears** as a reviewing account in the sample.
+- **The sample is ten repositories.** One repository can carry a whole tool's count, as the "Where" column shows, so these shares describe the sample and not the market.
+
+### What follows for the pitch
+
+- The competition slide no longer says "Rivals verify with a model; ours runs the tests". It names the differences above, says where rivals are ahead, and says that the price, $2 under CodeRabbit, is not the reason to choose us.
+- The tagline and the one-liner stay true. They describe what the product does, not what only it does. The clause that is ours alone is the second half of the definition: "or say the finding is unverified".
+- The limits listed under "Honest limitations" stand, and the test-suite assumption now applies to a narrower claim.
+
+---
+
 ## Positioning summary
+
+*The "Verification" row is superseded by the re-check above: rivals do not verify with a model alone, and our test run is specified, not built.*
 
 | | Agentic Code Review (this project) | Tier 1 hosted reviewers | Claude Code Review | Danger/DangerJS | Graphite |
 |---|---|---|---|---|---|
 | Category | Open-source AI reviewer | Hosted AI reviewer | Managed multi-agent reviewer | CI process linter | Stacked-diffs workflow |
-| Cost model | Open-source tool: free, on a single low-cost provider. Hosted service: variable cost + markup (planned) | Per-seat subscription | Per-review token usage | Free (MIT) | Per-seat subscription |
+| Cost model | Open-source tool: free, on a single low-cost provider. Hosted service: $22 per seat per month, under CodeRabbit's $24 (planned) | Per-seat subscription | Per-review token usage | Free (MIT) | Per-seat subscription |
 | Verification | Deterministic (real test run) | Agentic / model-based | Agentic behavior check | None (rule-based) | Agentic (add-on) |
 | Openness | Fully open, forkable | Closed engine | Closed | Fully open | Closed |
 | Bias stance | Decoupled fresh-context agent | Varies | Fresh agents | N/A | Converging with writer (Cursor) |
