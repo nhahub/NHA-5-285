@@ -333,7 +333,7 @@ agent:
   investigationTools: false    # true is accepted but has no effect until feature 005
 
 budget:
-  maxTokens: 20000             # PLACEHOLDER (TBD-3); validated, not enforced until User Story 2
+  maxTokens: 200000            # PLACEHOLDER (TBD-3); validated, not enforced until User Story 2
 
 context:                       # validated, no effect until feature 004
   depth: 1

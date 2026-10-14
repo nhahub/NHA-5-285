@@ -65,7 +65,7 @@ class AgentSettings(_Section):
 
 
 class BudgetSettings(_Section):
-    max_tokens: Annotated[int, Field(ge=1)] = 20000  # PLACEHOLDER - SRS §8, TBD-3
+    max_tokens: Annotated[int, Field(ge=1)] = 200000  # PLACEHOLDER - SRS §8, TBD-3
 
 
 class Settings(_Section):
