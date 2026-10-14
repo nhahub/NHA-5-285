@@ -29,6 +29,7 @@ No trustworthy published figure exists for the size of the AI code review market
 
 - **Capital is concentrating.** CodeRabbit reached a $1.5B valuation (Aug 2026), Qodo raised a $70M Series B (Mar 2026), and Cursor acquired Graphite (Dec 2025).
 - **Bundling is the main threat to standalone tools.** GitHub Copilot includes pull request review in its $10-per-month Pro plan.
+- **The audience is the reviewer (2026-10-10).** The layers below count developer seats, which is what rivals charge for. About three quarters of developers review code, and the obtainable market is counted in reviewers.
 - **Signal quality is the open gap, not speed.** Peer-reviewed evidence shows pull requests reviewed only by AI merge less often than those reviewed only by humans (45.2% vs 68.4%), and most AI review comments are noise.
 
 ## Source policy
@@ -95,6 +96,8 @@ GitHub's "180M+ developers" counts accounts, including students and inactive use
 
 **Price used as a proxy (2026-10-08).** The project uses this entry-tier range, $24–30 per developer per month, as its stand-in for yearly spend per customer in its pitch and market figures, until a pilot measures review volume per team and the markup on the hosted service is set. Then yearly spend becomes price per review × reviews per team per month × 12, and the market layers are recomputed in teams rather than developers.
 
+**Our own price (2026-10-10).** The founder set the hosted service's price as a monthly price per seat, from the average of rivals' prices, with two limits: it must stay under CodeRabbit's $24, and Greptile's $30 is treated as an anomaly. That gives $22, the average of CodeRabbit's $24 and Graphite's $20. At $22 the TAM is $9.6B and the SAM $1.8B to $2.9B (C; [`0052-unit-economics-and-financials.md`](./0050-financial-planning/0052-unit-economics-and-financials.md) §7). The proxy range above still runs from $24 to $30 and still includes Greptile; whether to narrow it is not decided. The layers are still counted in developers, not yet in teams.
+
 ### Serviceable market (SAM)
 
 The project can serve roughly **7.0M–11.2M professional developers**, or 19–31% of the TAM base. That figure comes from three shares applied to the 36.5M professional developers (C).
@@ -120,9 +123,30 @@ The project can serve roughly **7.0M–11.2M professional developers**, or 19–
 
 **Next step:** Stack Overflow publishes its 2025 raw responses under an open licence. Cross-tabulating language and AI use in that file would give a joint share for two of the three filters, removing the independence assumption.
 
+### The reviewer among those developers
+
+Added on 2026-10-10. The project's one audience is now the reviewer ([`000-problem-and-audience.md`](./000-problem-and-audience.md)). The layers above count developers because that is what rivals charge for: a seat is a developer whose pull requests get reviewed. This section says how many of those developers are reviewers, and the obtainable market below is counted in reviewers.
+
+| Measure | Value | Source | Confidence |
+| --- | --- | --- | --- |
+| Review code as part of their work | 76.4% (68.8% because they see value in it, 7.6% because they were told to); 23.6% do not | [Stack Overflow 2019](https://survey.stackoverflow.co/2019/), 70,390 responses. The latest edition we found that asks | A, dated |
+| Core developers who also reviewed in the month | 69.2% reviewed at least one pull request, 59.7% at least four | Ten public TypeScript repositories, September 2026 ([`review-volume-report.md`](./0050-financial-planning/0051-cost-structure/review-volume-report.md) §2.5) | C, from A |
+| Reviewing done by the top fifth of reviewers | 73% | Same | C, from A |
+
+**Calculation**
+
+1. **Reviewers in the SAM:** 7.0M–11.2M × 76.4% ≈ 5.3M–8.5M.
+2. **Dollars are not recomputed.** The proxy price is per developer seat, so the SAM stays $2.0B–$4.0B. If the hosted service is priced per reviewer or per review, this layer is recomputed in that unit.
+
+**Caveats**
+
+- The survey predates AI coding tools, and it covers everyone who answered, not only developers in pull-request teams, where the share who review is probably higher.
+- Our own sample is public repositories, and its two figures sit a little under the survey's rather than confirming it.
+- Head count understates how uneven the work is: a fifth of the reviewers do about three quarters of the reviewing, so the people who feel the problem most are fewer than these totals.
+
 ### Obtainable market (SOM)
 
-A realistic three-year adoption target for the **v3 GitHub Action** is **about 100–500 public repositories**, of which roughly a quarter would be actively used. No open-source AI review Action in the published research has passed 460 repositories (C, based on A).
+A realistic three-year adoption target for the **v3 GitHub Action** is **about 100–500 public repositories**, of which roughly a quarter would be actively used. Counted in reviewers, the people the product serves, that is **roughly 50–500** (low confidence; step 3). No open-source AI review Action in the published research has passed 460 repositories (C, based on A).
 
 This target applies to the Action, not to v1. v1 is a local command-line tool and leaves no public trace such as a workflow file, so code search cannot count its users; its adoption is measured by the pilot teams instead.
 
@@ -133,6 +157,8 @@ This target applies to the Action, not to v1. v1 is a local command-line tool an
 | SAM (above) | 7.0M | 11.2M developers | Three shares × 36.5M professional developers | C |
 | × GitHub reach | 41% | 80.5% | Organisations using GitHub Actions ([JetBrains State of CI/CD 2025](https://blog.jetbrains.com/teamcity/2025/10/the-state-of-cicd/)); professionals using GitHub regularly ([Stack Overflow 2025](https://survey.stackoverflow.co/2025/technology)) | A |
 | = GitHub-reachable SAM | 2.9M | 9.0M developers |  | C |
+| × review code as part of their work | 76.4% | 76.4% | Stack Overflow 2019 (the section above) | A, dated |
+| = GitHub-reachable reviewers | 2.2M | 6.9M reviewers |  | C |
 
 **Step 2: what comparable tools actually achieved**
 
@@ -147,16 +173,20 @@ Source: [Sun et al., arXiv 2508.18771](https://arxiv.org/abs/2508.18771), reposi
 
 **Step 3: SOM scenarios over three years**
 
-| Scenario | Public repos | Active repos (≈25%) | Basis |
-| --- | --- | --- | --- |
-| Base | \~100 | \~25 | Matches CodeRabbit's own open-source Action (108 repos) |
-| Stretch | \~500 | \~125 | Matches the most-adopted Action in the study (460 repos) |
+| Scenario | Public repos | Active repos (≈25%) | Reviewers, at 2–4 per active repo | Basis |
+| --- | --- | --- | --- | --- |
+| Base | \~100 | \~25 | \~50–100 | Matches CodeRabbit's own open-source Action (108 repos) |
+| Stretch | \~500 | \~125 | \~250–500 | Matches the most-adopted Action in the study (460 repos) |
 
 The 25% active ratio comes from the most-adopted Action: 114 of its 460 repositories had at least 50 PRs.
 
+**Reviewers per active repository (C, low confidence).** The 2–4 comes from the five smaller repositories in our own sample, which have 0 to 4 core reviewers each; the five larger have 10 to 75 and are not typical of a repository adopting an open-source Action. It is an assumption until adopters can be counted.
+
+**What this count leaves out.** The audience is the reviewer in a company team, and most of those work in private repositories that no public count can see. For them the obtainable market starts with the pilot: 6 pilot teams × `[MISSING: reviewers per team, measured in the pilot]`.
+
 **Benchmark against the leader.** CodeRabbit's \~139K paid seats equal about 1.5%–4.9% of the GitHub-reachable SAM. It reached that with $231M raised and a full team, so it is a ceiling for funded players, not a target for this project.
 
-**Revenue SOM:** `[MISSING: hosted-service conversion from the pilot]`. The open-source tool is free; under the open-core model, revenue comes from the hosted review service, so revenue SOM needs the share of pilot teams and free-tool users who move to it. Until then, the adoption measures are active repositories (for the v3 Action) and signal quality.
+**Revenue SOM (decided 2026-10-10): bottom-up from the pilot alone.** The founder chose to count the obtainable market only from customers the project can name, and to say that later years wait for the pilot. Year 1 is the pilot teams: 6 teams × 5 seats = 30 seats, of which half are assumed to pay, 15 seats, × $264 a year = **$3,960 a year** (C). Six teams is the pilot ask, set on 2026-10-10; the 50% paying share is the founder's assumption, and no pilot has measured it. Five seats a team is the team size these documents use as an illustration, not a measurement. Years 2 and 3 are `[MISSING: the measured share of pilot seats that pay, and the teams reachable after the pilot]`. The 50–500 target above stays as the adoption target for the v3 Action; it is not used as the revenue SOM.
 
 **Caveats**
 
@@ -264,6 +294,7 @@ The weakest number in this study is the pure-play category ARR. It rests on one 
 - [ ] Read the primary Faros AI and GitClear reports instead of relying on O'Reilly's summary
 - [ ] Estimate the share of professional developers who work in pull-request teams, to turn the TAM ceiling into a realistic serviceable market
 - [ ] Decide which signal-to-noise benchmark the project will publish against
+- [ ] Measure reviewers per team in the pilot, to replace the assumed 2–4 per repository and the 2019 survey share
 
 ## Sources
 
@@ -277,6 +308,7 @@ The weakest number in this study is the pure-play category ARR. It rests on one 
 - [GitHub Copilot plans and pricing](https://github.com/features/copilot/plans)
 - [GitHub Octoverse 2025](https://github.blog/news-insights/octoverse/octoverse-a-new-developer-joins-github-every-second-as-ai-leads-typescript-to-1/)
 - [SlashData — Global developer population trends 2025](https://www.slashdata.co/post/global-developer-population-trends-2025-how-many-developers-are-there)
+- [Stack Overflow Developer Survey 2019 — code review](https://survey.stackoverflow.co/2019/)
 
 **Research papers (A)**
 

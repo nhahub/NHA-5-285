@@ -2,11 +2,13 @@
 
 **Status: non-normative.** A business-side working document, not a specification. It defines nothing to build.
 
-**Date:** 2026-10-09 · **Task:** 5 of the pitch rework list, "measure average review volume".
+**Date:** 2026-10-09, updated 2026-10-10 · **Task:** 5 of the pitch rework list, "measure average review volume".
 
 Pricing the hosted review service needs two numbers: what one review costs, and how many reviews a customer runs in a month. This report records the runs made so far, the data collected, the runs proposed to finish the measurement, and the decisions still open.
 
 **The product is still experimental, so this report does not pick a model or a price.** Both are inputs to the cost. The report measures tokens, lists prices as scenarios, and keeps cost per review as a formula (section 3).
+
+**Updated 2026-10-10: a working model.** The founder set Gemini 3.8 Flash as the model to assume and gave the go-ahead to run the ladder on it. The formula stays, and Gemini's prices are one more scenario in it, now the base case. The ladder was started and stopped by the provider's free-tier limit of 20 requests a day: two of its five sizes are measured (sections 1.3 and 3.4).
 
 Confidence labels follow [`004-market-study.md`](../../004-market-study.md): **A** is primary data (the GitHub API, OpenRouter's own price list, a run's own report), **C** is our calculation from A inputs.
 
@@ -15,13 +17,18 @@ Confidence labels follow [`004-market-study.md`](../../004-market-study.md): **A
 ## Summary
 
 - **Usage is measured, as a proxy.** Across ten public TypeScript repositories, a core developer opens about 11 to 13 pull requests a month. For a team of five that is 55 to 65 reviews a month if each pull request is reviewed once, and up to about three times that if every push is re-reviewed (C, from A).
+- **Reviewing rests on fewer people than writing does** (added 2026-10-10, section 2.5). In the same repositories, 182 core reviewers did 97.7% of the reviewing, a median of 21.5 pull requests each a month, against 13 opened per core developer (C, from A).
 - **Cost per review is a formula, not a number:** tokens × price. The tokens depend on the pull request and the model; the price depends on the model and the provider. Neither model nor price is fixed here.
 - **Tokens have been measured twice,** both with gpt-oss-120b: a small demo change (4,634 input, 2,660 output) and one real pull request, microsoft/playwright#43199 (12,441 input, 4,888 output).
 - **Prices spread widely, which is why they stay variables.** For the real pull request, the six price scenarios collected so far range from $0.0007 to $0.036 a review, about 54 times apart. Two sources disagree on the price of the same model, and one model's price varies about 20 times between providers (A).
 - **Output tokens carry most of the cost:** 66% to 99% of it, in both runs and every scenario. Output is the part that changes most from model to model, so it is the main thing the runs have to measure.
 - **The tool's default budget would refuse a share of real pull requests.** It fits about 575 changed lines. Between 4% and 37% of pull requests per repository are larger, 25% across the whole sample (C, an upper bound).
 - **Provisional reading, from one real pull request:** in every scenario that review costs under four cents, and a developer's month of reviews comes to between about one cent and about $1.30, against rivals' $24 to $30 per seat. If more runs confirm this, the price will be set by the markup and the fixed costs, not by the model cost.
-- **Next:** a proposed ladder of five pull requests, run three times each per model (section 4), and four open decisions (section 5).
+- **On Gemini 3.8 Flash, a median-size review costs about four cents** (added 2026-10-10, sections 1.3 and 3.4). Five runs completed: three of a 50-line pull request, at $0.0184 on average, and two of a 160-line one, at $0.0418, with the two runs $0.0226 and $0.0611 apart. From 2027-01-01 the provider's prices double, and so do these.
+- **Thinking tokens are 99% of the billed output, and the tool does not count them.** The tool recorded 264 output tokens over the five runs; the provider billed 33,936. Any cost worked out from the tool's own count is about 129 times too low on this model.
+- **The ladder is not finished.** The key is on the provider's free tier, which allows 20 requests a day for this model. The three larger sizes, which cover the larger half of real pull requests, are not measured on Gemini.
+- **No run on Gemini reported a finding.** In all five, the model replied without calling the finding tool, and the build cannot tell "nothing to report" from "did not use the tool".
+- **Next:** the three unmeasured sizes (section 4), on a paid key or after the daily limit resets, and the decisions in section 5.
 
 ---
 
@@ -74,6 +81,38 @@ What these runs add (A):
 - **Input per model call is about 6,200 to 7,100 tokens** for this pull request: run A used 12,441 over two calls, and run B's refused request was 7,126. The tool's own estimate was 7,200, so it is close.
 - **A provider's rate limit is a third variable beside model and price.** Groq serves `qwen/qwen3.8-27b`, but its on-demand tier allows 7,000 input tokens a minute for it, less than one request for this pull request.
 - **Still unknown:** which model produced run C, and the token counts of runs B and C.
+
+### 1.3 The ladder on Gemini 3.8 Flash
+
+Run on 2026-10-10 with the script in Appendix B, `gemini-3.8-flash` through the provider's OpenAI-compatible address, temperature 0, budget 80,000, the built-in system prompt. Every run that completed took one model call and no repair turn.
+
+| Run | Pull request | Changed lines reviewed | Files reviewed / listed | Input | Output the tool recorded | Thinking | Output billed | Seconds | Findings | Outcome |
+|---|---|---|---|---|---|---|---|---|---|---|
+| small 1 | trpc/trpc#7614 | 50 | 2 / 2 | 2,685 | 50 | 4,523 | 4,573 | 117.4 | 0 | No finding call |
+| small 2 | trpc/trpc#7614 | 50 | 2 / 2 | 2,685 | 45 | 5,798 | 5,843 | 75.8 | 0 | No finding call |
+| small 3 | trpc/trpc#7614 | 50 | 2 / 2 | — | — | — | — | 203.9 | — | Provider error, during a network outage |
+| small 3, repeated | trpc/trpc#7614 | 50 | 2 / 2 | 2,685 | 50 | 2,649 | 2,699 | 101.9 | 0 | No finding call |
+| median 1 | trpc/trpc#7616 | 160 | 3 / 3 | 3,739 | 67 | 15,467 | 15,534 | 153.0 | 0 | No finding call |
+| median 2 | trpc/trpc#7616 | 160 | 3 / 3 | 3,739 | 52 | 5,235 | 5,287 | 96.4 | 0 | No finding call |
+| median 3 | trpc/trpc#7616 | 160 | 3 / 3 | — | — | — | — | 251.6 | — | Refused: daily limit (HTTP 429) |
+| Playwright 1 to 3 | microsoft/playwright#43199 | 188 | 10 / 16 | — | — | — | — | 78 to 80 | — | Refused: daily limit |
+| budget edge 1 and 2 | n8n-io/n8n#39795 | 574 | 15 / 15 | — | — | — | — | 100 to 106 | — | Refused: daily limit |
+| budget edge 3, large 1 to 3 | n8n-io/n8n#39795, excalidraw/excalidraw#12142 | 574, 1,690 | | | | | | | | Not started |
+
+"Output billed" is the provider's total minus the input (Calculated), and "thinking" is that minus the output the tool recorded. A first trial run of the small pull request, made before the script kept the provider's total, recorded 2,685 input and 49 output tokens in 67.7 seconds; it is not in the table.
+
+What these runs show (A for the counts, C for what is worked out from them):
+
+- **Thinking tokens are almost all of the billed output:** 98.9% for the small pull request and 99.4% for the median one. The provider's price list says output is charged "including thinking tokens".
+- **The tool's own output count leaves them out.** The provider's OpenAI-compatible reply puts thinking tokens only in its total, and the build adds up the input and output fields ([`accounting.py`](../../../../../src/agentic_review/core/review/accounting.py)). Over the five runs it recorded 264 output tokens where 33,936 were billed, about 129 times fewer. On this provider the tool's report cannot be used to work out cost. That is an engineering matter, reported here and not changed.
+- **Output varies a great deal between identical runs.** The same 160-line pull request, at temperature 0, was billed 15,534 output tokens once and 5,287 the next time. The small one ranged from 2,699 to 5,843. Three runs per size is too few to pin an average down.
+- **Input is small and steady:** 2,685 tokens for 50 changed lines and 3,739 for 160, the same in every run. That is about 9.6 tokens for each further changed line (Calculated: (3,739 − 2,685) ÷ (160 − 50)), far below the tool's own estimate of 33, which overestimates on purpose. Two sizes do not make a trend.
+- **No run reported a finding.** In all five the model answered without calling `emit_finding`, and the build reported the gap itself: "this build cannot tell a change with nothing to report from a model that did not use the finding tool." What the model said instead is not kept in the report. The two tRPC pull requests may have nothing worth reporting; these runs cannot show it either way.
+- **A review took 76 to 153 seconds,** the clone included, in one model call.
+- **The free tier stops at 20 requests a day.** The provider's refusal reads: "Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash". This session got seven answers from the model before the refusals began, so the rest of the day's 20 were used some other way: by earlier use of the same key, or by requests that failed. Which is not known. A team of five opening 55 to 65 pull requests a month would fit in that limit only if no day had more than 20 model calls.
+- **Still unknown on this model:** the cost of the three larger sizes, and whether it reports findings on a change that has defects.
+
+Since section 2.1 was written, microsoft/playwright#43199 was closed without being merged, on 2026-10-09 at 18:09 UTC. The tool still reads it. The other four pull requests were open at their recorded heads on 2026-10-10.
 
 ---
 
@@ -164,6 +203,8 @@ The team of five is an illustration; it is the team size [`dummy-pricing-example
 
 That default is a stated placeholder (SRS §8, TBD-3). This figure is a first input for setting it.
 
+**Update, 2026-10-10.** In the working tree the default is now 200,000, a change that is staged and not yet committed. By the same estimate that fits about 6,030 changed lines (Calculated: (200,000 − 1,000) ÷ 33), and 145 of the 7,670 pull requests are larger: 1.9% of the pooled sample, from 0% to 6% by repository. The "25% refused" finding above describes the 20,000 default.
+
 ### 2.4 Model prices collected
 
 These are scenarios, not a choice. Prices are per 1M tokens.
@@ -175,6 +216,9 @@ These are scenarios, not a choice. Prices are per 1M tokens.
 | Qwen3.8 27B | The cost sheet, [`pr-variable-pricing-model.md`](./pr-variable-pricing-model.md) | $0.0248 | $4.35 | $0.0198 |
 | Qwen3.8 27B | OpenRouter's default listing, read 2026-10-09 (A) | $0.425 | $2.55 | $0.085 |
 | Qwen3.8 27B | OpenRouter, range across its 19 providers (A, Appendix C) | $0.045 to $0.99 | $1.40 to $5.25 | $0.0198 to $0.99 |
+| Gemini 3.8 Flash, paid tier, through 2026-12-31 | Supplied by the founder on 2026-10-10 and re-read on [Google's pricing page](https://ai.google.dev/gemini-api/docs/pricing) the same day (A) | $0.75 | $3.75, "including thinking tokens" | $0.075 |
+| Gemini 3.8 Flash, paid tier, from 2027-01-01 | Same | $1.50 | $7.50 | $0.15 |
+| Gemini 3.8 Flash, free tier | Same | Free | Free | Free |
 
 Three things in this table are the reason prices are treated as variables:
 
@@ -183,6 +227,41 @@ Three things in this table are the reason prices are treated as variables:
 - **The model itself is open.** The comparison sheet recommends gpt-oss for text-only work, the cost sheet prices Qwen, and the build's default is a placeholder model on NVIDIA NIM's free tier.
 
 The gpt-oss prices and the cost sheet's 5.5% OpenRouter fee were taken as written and not re-checked.
+
+**Gemini 3.8 Flash is the working model since 2026-10-10.** Two things about its price list matter here. Every paid price doubles on 2027-01-01. And the free tier is not a basis for a paid service: it is limited to 20 requests a day for this model (section 1.3), and the same page marks free-tier content as used to improve the provider's products.
+
+### 2.5 Who reviews: reviewers per repository and their load
+
+Added on 2026-10-10, after the reviewer was set as the project's one audience ([`000-problem-and-audience.md`](../../000-problem-and-audience.md)). The reviews on the same 7,670 human pull requests were read from the GitHub API (A). Appendix A has the query and the definitions.
+
+A **reviewer** is a non-bot account that reviewed at least one pull request it did not open. A **core reviewer** reviewed at least four different pull requests in the month, the same threshold as a core developer.
+
+| Repository | Human PRs | With a human review | Merged with none | Reviewers | Core reviewers | Core developers | PRs reviewed per core reviewer, median | Share of reviewing done by the top 3 |
+|---|---|---|---|---|---|---|---|---|
+| angular/angular | 504 | 75% | 9% | 28 | 10 | 23 | 14.5 | 75% |
+| excalidraw/excalidraw | 142 | 6% | 79% | 2 | 2 | 4 | 4.5 | 100% |
+| microsoft/playwright | 276 | 78% | 1% | 6 | 4 | 10 | 55.5 | 87% |
+| microsoft/vscode | 2,288 | 75% | 0% | 62 | 45 | 59 | 27 | 33% |
+| n8n-io/n8n | 1,714 | 76% | 2% | 99 | 75 | 83 | 16 | 13% |
+| nestjs/nest | 144 | 30% | 71% | 5 | 2 | 8 | 22 | 96% |
+| supabase/supabase | 892 | 71% | 1% | 69 | 29 | 41 | 16 | 33% |
+| trpc/trpc | 47 | 6% | 91% | 1 | 0 | 1 | none | 100% |
+| twentyhq/twenty | 1,482 | 67% | 13% | 16 | 11 | 29 | 66 | 67% |
+| vitest-dev/vitest | 181 | 50% | 21% | 6 | 4 | 5 | 26 | 91% |
+
+"Merged with none" is the share of merged human pull requests with no recorded human review. In the small projects it is mostly maintainers merging their own work.
+
+**Pooled over the ten repositories** (C).
+
+- **Most pull requests get a human review, from few people.** 5,384 of 7,670 (70.2%) had at least one; 363 of 5,394 merged ones (6.7%) had none.
+- **182 core reviewers did 97.7% of the reviewing,** 6,897 of 7,058 reviewer-and-pull-request pairs. There are 263 core developers, so 0.69 core reviewers for each; the median repository has 0.47.
+- **A core reviewer reviews more than a core developer writes:** a median of 21.5 pull requests a month, against 13 opened. A quarter review 42 or more.
+- **The work is concentrated.** The top fifth of all 294 reviewers did 73% of it, and the top tenth 55%. In five of the ten repositories, three people did more than 85%.
+- **Reviewers and authors are mostly the same people.** 182 of the 263 core developers (69.2%) reviewed someone else's pull request that month, 157 (59.7%) at least four. 227 of the 294 reviewers (77.2%) also opened one.
+- **Reviewers already receive automated comments.** A bot account reviewed 5,711 of the 7,670 human pull requests (74.5%), and more than half of them in five of the ten repositories. Bot accounts here include security scanners and CI bots as well as AI reviewers, so this is an upper bound on AI review. Which tools they are is left to the differentiator check (task 2).
+- **A first human review usually arrives the same day:** median 2.7 hours, three quarters within 24 hours, a tenth after 94 hours or more.
+
+**Limits.** The limits in section 2.2 apply. Two more: a review left as plain conversation comments is not counted, and review of pull requests opened late in September may not have happened yet when the data was read on 2026-10-09.
 
 ---
 
@@ -198,7 +277,7 @@ model cost per developer per month = R × cost per review
 | Variable | Meaning | Depends on | Known so far |
 |---|---|---|---|
 | `T_in` | Input tokens per review | The size of the pull request, the instructions, and how many model calls the review takes. Roughly the same for every model | Two runs, each over two calls: 4,634 for 20 changed lines, and 12,441 for 188. The tool's own estimate is about 1,000 plus 33 per changed line, per call, and it overestimates on purpose |
-| `T_out` | Output tokens per review, including any reasoning tokens | **The model**, and how many findings it reports | Two runs, one model: 2,660 and 4,888 |
+| `T_out` | Output tokens per review, including any reasoning tokens | **The model**, and how many findings it reports | gpt-oss-120b, two runs: 2,660 and 4,888. Gemini 3.8 Flash, five runs: 2,699 to 15,534 billed, of which 45 to 67 were visible output. The tool's own count leaves thinking tokens out on Gemini, so `T_out` there is the provider's total minus `T_in` |
 | `P_in`, `P_out` | Price per input and output token | The model and the provider. A provider's rate limits decide whether a request is served at all | Six scenarios in section 2.4 |
 | `f` | Platform fee | The route to the model | 0 when calling a provider directly; 5.5% for OpenRouter in the cost sheet |
 | `R` | Reviews per developer per month | The team and the trigger | 11 to 13 if each pull request is reviewed once; up to 39 on every push (section 2.2) |
@@ -243,9 +322,30 @@ The same scenarios applied to run A: 12,441 input and 4,888 output tokens, from 
 
 This is one pull request of roughly median size, run once with one model. The ladder in section 4 is what turns it into an average.
 
+### 3.4 Cost per review on Gemini 3.8 Flash
+
+Section 1.3's token counts at the paid-tier prices, with `f` = 0 because the provider is called directly (C).
+
+| Size | Runs | Input | Output billed, mean (range) | Cost per review through 2026-12-31, mean (range) | Cost per review from 2027-01-01, mean |
+|---|---|---|---|---|---|
+| Small, 50 changed lines | 3 | 2,685 | 4,372 (2,699 to 5,843) | $0.0184 ($0.0121 to $0.0239) | $0.0368 |
+| Median, 160 changed lines | 2 | 3,739 | 10,410 (5,287 to 15,534) | $0.0418 ($0.0226 to $0.0611) | $0.0837 |
+
+One row worked through: median run 1 is (3,739 × $0.75 + 15,534 × $3.75) ÷ 1,000,000 = $0.0028 + $0.0583 = $0.0611.
+
+- **The base case for the financials is $0.0418 a review,** the mean of the two median-size runs. 160 changed lines is close to the pooled median of 155 (section 2.3), and 50.6% of the 7,670 sampled pull requests are that size or smaller. It is a typical review, not an average one.
+- **The real average is higher, by an unmeasured amount.** A quarter of pull requests are over 581 changed lines, and none that large has been run on this model.
+- **Output is 92% of the cost** across the five runs (Calculated: 33,936 × $3.75 against 15,533 × $0.75 for the input).
+- **Per developer per month:** $0.54 at 13 reviews and $1.63 at 39, model cost only, through 2026; $1.09 and $3.26 from 2027 (Calculated: 13 and 39 × the base case).
+- **For comparison, the gpt-oss-120b run of the Playwright pull request** (12,441 input and 4,888 output) would cost $0.0277 at Gemini's 2026 prices. It is not a Gemini measurement: Gemini's output count for that pull request is unknown.
+
+The prices, the margins and the break-even built on this are in [`0052-unit-economics-and-financials.md`](../0052-unit-economics-and-financials.md).
+
 ---
 
 ## 4. Proposed runs
+
+**State on 2026-10-10:** the small and median steps are measured on Gemini 3.8 Flash (section 1.3). The Playwright, budget-edge and large steps are not: the provider's free tier refused them. They need a key on the paid tier, at an estimated cost under $1 for all nine runs, or one more day for each 20 requests.
 
 One pull request cannot give an average, so the proposal is a ladder of five open pull requests of different sizes. Each is almost entirely TypeScript or JavaScript, and all were open on 2026-10-09.
 
@@ -275,12 +375,19 @@ One pull request cannot give an average, so the proposal is a ladder of five ope
 
 ## 5. Open decisions
 
+**State on 2026-10-10.** Decisions 1 to 3 below were answered: go ahead, on Gemini 3.8 Flash, with the full ladder. Decision 4 is carried as both cases in the financials. Two new ones replace them:
+
+- **How to finish the ladder:** enable billing on the key, or run the remaining nine reviews over later days inside the free limit.
+- **Whether the tool should record thinking tokens.** Until it does, its own report understates cost on this provider. That is a change to the build, for the engineering side.
+
+The original list, as written on 2026-10-09:
+
 1. **Go-ahead to run the ladder.** The runs call a paid or rate-limited provider with your key. The Playwright pull request has now been run from the notebook; the other four steps have not.
 2. **Which models to measure first.** This is not a choice of model for the product, only of what to measure now. Recommended: start with whatever the keys you have can reach, and add models as keys appear. So far gpt-oss-120b on Groq completes the Playwright pull request, and `qwen/qwen3.8-27b` on Groq's on-demand tier does not.
 3. **The five-step ladder, or the Playwright pull request alone.** Recommended: the ladder, since an average needs more than one size.
 4. **Which trigger to assume when turning pull requests into reviews:** once per pull request, or on every push. The two differ by up to three times. Recommended: carry both, once per pull request as the base case, until the pricing unit is settled (task 4).
 
-**No longer a decision:** which model the service uses and what it costs. On 2026-10-09 both were left as variables while the product is experimental.
+**No longer a decision:** which model the service uses and what it costs. On 2026-10-09 both were left as variables while the product is experimental. On 2026-10-10 Gemini 3.8 Flash became the working assumption; the model and its price remain parameters of the formula.
 
 **Carried forward, not decisions for this task:**
 
@@ -314,12 +421,13 @@ with `$q` set to, for example, `repo:microsoft/playwright is:pr created:2026-09-
 
 - **Definitions.** A *human* pull request has an author whose account type is not `Bot`; a pull request with a deleted author counts as a bot. A *core developer* opened at least four human pull requests in September. *Changed lines* is additions plus deletions. *Commits per pull request* is the count at the time of reading.
 - **The raw data is not in the repository.** It is 8,849 records in a temporary working folder, and the query above reproduces it in about 15 minutes.
+- **Reviews (section 2.5)** were read on 2026-10-09 for the same pull requests, by number, in batches of 40: for each, up to 60 reviews with the reviewer's account, account type, review state and time. A *human review* is a review in any state except pending, by a non-bot account other than the pull request's author. Twenty-eight pull requests had more than 60 reviews and are counted on their first 60. This second read takes about 20 minutes.
 
 ---
 
 ## Appendix B — The measurement script and settings
 
-Neither file is in the repository yet, and neither has been run. The script calls the same `run_review` the command line calls, then reads the token counts from the report the pipeline already builds. It depends on the `pr` field added to `ReviewRequest` on 2026-10-09.
+Neither file is in the repository. Both were run on 2026-10-10 for section 1.3, with two additions to the script below: it records the provider's total token count for each model call, through a LangChain callback, and it removes the `LANGFUSE_*` variables from the environment so that every run uses the built-in system prompt. The script calls the same `run_review` the command line calls, then reads the token counts from the report the pipeline already builds. It depends on the `pr` field added to `ReviewRequest` on 2026-10-09.
 
 **Settings.** Model-neutral on purpose: the model and the provider are passed to each run.
 
