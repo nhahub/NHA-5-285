@@ -38,17 +38,20 @@ flowchart LR
     C --> A["Assembly<br/>instructions + diff"]
     A --> R["Review<br/>one model call<br/>emit_finding only"]
     R --> O["Terminal summary<br/>exit 0 / 1 / 2"]
+    R --> F["Report files<br/>--json · --html"]
 ```
 
 | Available | Not yet |
 |---|---|
-| `agentic-review review`, with `--scope`, `--base`, `--head`, `--pr`, `--config`, `--ceiling` | `--commit`, `--json` |
+| `agentic-review review`, with `--scope`, `--base`, `--head`, `--pr`, `--config`, `--ceiling`, `--json PATH`, `--html PATH` | `--commit`; `--json` to stdout |
 | Reviewing **uncommitted** changes (staged + unstaged + untracked) | Staged-only and single-commit scopes |
 | Reviewing a **branch range** (`--scope range --base REF [--head REF]`) | |
 | Reviewing a **public GitHub pull request** (`--pr URL`), with no checkout | Private repositories; anything posted back to GitHub |
 | Default and configured exclusions | "Nothing to review" short-circuit |
 | One model pass; findings only through `emit_finding`, validated | Repair turn, tool-call ceiling, diff-size refusal |
 | Terminal summary, verdict, exit codes 0 / 1 / 2 / 3 | `schema` and `--version` commands |
+| A JSON report and a self-contained **HTML report** written to files | |
+| `agentic-review render REPORT --html PATH`, re-rendering a saved report offline | |
 | Preflight: repository, config file, credential | A report when the **provider fails** (today it crashes) |
 
 ---
@@ -388,6 +391,47 @@ In this order:
 7. **Degradations**: anything that went wrong, as `[source] code: detail`.
 8. The **verdict**.
 
+### The report files
+
+Two optional flags write the same review to disk. Neither changes the terminal summary, and neither changes the
+exit code — writing a file is not an outcome.
+
+```powershell
+uv run --env-file .env agentic-review review --json r.json --html r.html
+```
+
+| Flag | What it writes |
+|---|---|
+| `--json PATH` | The machine-readable report, conforming to the published review-report schema. **Authoritative.** |
+| `--html PATH` | A self-contained HTML rendering of that same report, for a person who was not at the terminal |
+
+Both need a path — there is no stdout form in this build — both overwrite what is there, and both are checked
+before the review runs, so a mistyped directory costs no provider call. A preflight failure writes neither.
+
+The HTML report is **one file with no script and no network reference**: no CDN, no web font, nothing fetched. It
+opens offline, from a USB stick, on a machine without Python, and it is safe to attach to an email. Everything the
+model wrote — a finding's rationale, a degradation's detail — is escaped and displayed, never interpreted, so a
+`<script>` planted in a reviewed source file shows up as text.
+
+It also lists **every** excluded path, where the terminal collapses the list beyond ten. The JSON report remains
+authoritative; the HTML says so in its own footer.
+
+### Re-render a saved report
+
+`render` turns a JSON report back into HTML without reviewing anything:
+
+```powershell
+uv run agentic-review render r.json --html r.html
+```
+
+It needs no repository, no configuration, no credential and no network — note the absent `--env-file`. The output
+is byte-identical to what `review --html` wrote for that report, which is the point: the HTML can be regenerated,
+restyled or re-read long after the run, and iterating on how a report looks costs no model calls.
+
+`render` exits **0** when it writes the file and **3** when it cannot start — never 1 or 2. It makes no judgement,
+and a stale report on disk must not be able to set a CI job's status. A script that wants the verdict reads it from
+the JSON.
+
 ### Verdicts and exit codes
 
 | Verdict | Meaning | Exit |
@@ -472,6 +516,8 @@ uv run lint-imports                            # structural contracts 1, 2, 3, 6
 | Only `core/changeset/` runs git | contract 2 + `tests/structural/test_git_confinement.py` |
 | Only `core/agent/` imports `langchain_*`, `langgraph`, `openai` | contract 3 |
 | `cli > pipeline > agent > assembly \| output > changeset > findings \| config`; nothing imports `cli` | contract 6 |
+| Only `core/output/` imports `jinja2` | contract 8 + `tests/structural/test_template_escaping.py` |
+| The HTML template marks nothing `\|safe`, fetches nothing, and is reached through `importlib.resources` | `tests/structural/test_template_escaping.py` |
 
 If `lint-imports` reports a broken contract, move the import. Do not relax the contract: each one protects a
 requirement (FR-5.8, FR-10.2, AC-10).
@@ -565,7 +611,7 @@ Each run is a real, rate-limited API call; 50 runs per model take a while on the
 | `--commit REF` and its check; the rest of the preflight contract | Feature 001, User Story 3 |
 | `--scope staged \| commit` (reviewing one commit needs both rows), "nothing to review" | Feature 001, User Story 4 |
 | A pull-request reader backed by the GitHub MCP server (private repositories, the true base branch) | Its own ADR, after ADR-0011 |
-| `--json [PATH]`, `agentic-review schema`, `--version` | Feature 001, User Story 5 |
+| `--json` to **stdout** (the value-less form), `agentic-review schema`, `--version` | Feature 001, User Story 5 |
 | Notice listing ignored config settings; clean handling of internal errors | Feature 001, Polish |
 | Running the project's tests and type-check as evidence | Feature 002 |
 | Pattern rules, `regression` command, catch rate | Feature 003 |
