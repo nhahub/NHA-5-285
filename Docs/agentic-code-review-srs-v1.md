@@ -61,7 +61,7 @@ flowchart LR
 - Syntax-tree parsing and related-context retrieval behind a depth-parameterised interface, with the parser-backed implementation serving depths 0 and 1
 - Execution of the project's tests and type-check, with a recorded evidence trail
 - A review agent isolated from any code-writing agent, grounded in that evidence and in a pattern library — a single pass by default, with read-only investigation tools available once a baseline has been measured (FR-5.7a, FR-5.7b)
-- A canonical finding model with a versioned schema, terminal rendering, and JSON output
+- A canonical finding model with a versioned schema, terminal rendering, JSON output, and an HTML rendering of the same report (FR-10.4d, Should)
 - A pattern library and a runnable regression harness reporting a catch rate
 - Configuration, credential handling, and diagnosable failure messages
 
@@ -187,7 +187,7 @@ The requirements in §4 are organised around nine function blocks. Each requirem
 | **CF-4** | Context assembly | Fit diff, related context, evidence, and rules into the model window |
 | **CF-5** | Finding model and provider interface | The canonical structure, its schema, and the provider-independent interface a model client implements |
 | **CF-6** | The review agent | A grounded, isolated review pass — single by default, with a corpus-gated route to a bounded loop |
-| **CF-7** | Output | Terminal rendering, JSON artifact, exit status |
+| **CF-7** | Output | Terminal rendering, JSON artifact, HTML rendering, exit status |
 | **CF-8** | Pattern library and regression harness | Rules, rule attribution, and measurement |
 | **CF-9** | Configuration and diagnostics | Config, credentials, and legible failure |
 
@@ -387,6 +387,10 @@ Three tools considered and currently excluded, recorded so the reasoning is not 
 - **FR-10.4c (Must) (raised from Should in v1.1)** The system shall exit with a status code reflecting the review outcome, documented and stable across versions. The codes shall distinguish at least four outcomes: **a review that completed**; **a review that completed and found a `blocking` finding**; **a review that could not be produced** because the model was unreachable or its output could not be validated; and **an invocation that could not start** because a prerequisite was missing. A review that completed in a degraded state shall report as **completed**, because a degraded review is still a review (FR-11.2).
 
 *Raised to Must in v1.1 and given a floor. On a local surface the exit code is how a script learns what happened, and the distinction FR-4.5a and AC-7 insist on for humans — "found nothing" versus "never looked" — is worthless if both exit zero. The specific numbers are a design decision; the four outcomes are not. A degraded run exiting non-zero would make every machine without the optional resolver look like a failed review, which is the confusion AC-12 exists to prevent.*
+- **FR-10.4d (Should) (new in v1)** The system shall render a review's result to a **self-contained HTML document on request**, derived from the same review-report structure as the terminal summary and the JSON artifact (FR-8.2b) and not produced independently. One renderer shall serve both a rendering taken during a review and a rendering taken from a previously written JSON report. The document shall state the resolved change scope, every finding with its evidence reference, the counts by severity, every degradation, the run metadata of FR-8.2c–e, and the verdict; it shall preserve the distinction FR-5.10 requires between a change that was reviewed and found nothing and a run in which the model never used the tool; and it shall reference no network resource and execute no script, so that model-authored text in a finding's rationale or a degradation's detail is displayed and never interpreted.
+
+*FR-10.4d is new in v1 and is a Should. The terminal summary and the JSON artifact are what v1 is complete without — one is for the person at the prompt, the other for a script — and nothing in §6 rests on a third surface. What an HTML rendering adds is the thing neither does well: a review that can be read by someone who was not at the terminal, kept beside the change it describes, and opened later on a machine without the tool installed. It is specified as a **rendering** rather than as a report of its own because a third surface is the cheapest place for the outputs to begin disagreeing; FR-10.4a's rule — derived from the finding model, never produced independently — holds across all three. The no-script, no-network clause is not hardening. A rationale is text a model wrote about a repository nobody vouched for, and a browser is the one surface where such text is executed rather than shown. This requirement does not advance the v2 FR-8.5 visual report, which is a Mermaid diagram and a different artifact.*
+
 - **FR-8.2c (Must) (amended in v1.1)** The structured output shall record the requested and achieved context depth; the tool-call ceiling in force and whether investigation tools were enabled; the completion status (FR-5.7c); the model and schema versions used; and the resolved change scope — so a run can be reproduced and compared.
 - **FR-8.2d (Must) (new in v1.1)** The structured output shall record tool calls as **both** a total and a breakdown by purpose — at minimum the total, the number spent emitting findings, the number spent investigating, and the number of repair turns (FR-5.6c). A single total shall not be the only figure reported.
 - **FR-8.2e (Must) (new in v1.1)** The structured output shall record **every degradation** that occurred during the run, each identifying the stage that raised it and a machine-readable reason. This is the record FR-11.2's reporting obligation is discharged into.
@@ -672,7 +676,7 @@ Step 4.5 exists for the same reason and is the one step that may end in a revert
 | FR-5.2, FR-5.2a–c, FR-5.6, FR-5.6a–c | CF-5 | AC-3, AC-13, AC-15 |
 | FR-6.1, FR-6.2a, FR-6.2b, FR-6.2d, FR-6.2e, FR-6.2f, FR-6.3a | CF-8 | AC-4, AC-5, AC-6, AC-11 |
 | FR-7.2 | — | Satisfied by absence of a write path |
-| FR-8.1b, FR-8.2a–e, FR-8.4, FR-10.4a–c | CF-7 | AC-1, AC-3, AC-7, AC-14 |
+| FR-8.1b, FR-8.2a–e, FR-8.4, FR-10.4a–d | CF-7 | AC-1, AC-3, AC-7, AC-14 |
 | FR-9.1, FR-9.3 | CF-9 | AC-9 |
 | FR-9.2a, FR-10.1 | Cross-cutting | AC-1 |
 | FR-10.2 | Cross-cutting | AC-10 |

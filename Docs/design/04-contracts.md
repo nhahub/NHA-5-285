@@ -320,6 +320,7 @@ One artifact, one versioned schema (FR-8.2b). The finding model is **nested insi
 ```
 agentic-review review [OPTIONS]
 agentic-review regression [OPTIONS]
+agentic-review render REPORT.json --html PATH   # re-render a saved report
 agentic-review schema          # print the JSON schema and exit
 ```
 
@@ -334,6 +335,7 @@ agentic-review schema          # print the JSON schema and exit
 | `--commit REF` | — | Selects the `commit` scope on its own; required for it, and rejected with any other scope |
 | `--depth N` | `1` | A request, not a guarantee. `--depth 2` reports `no-index` and completes (AC-8) |
 | `--json [PATH]` | off | No path ⇒ stdout. FR-10.4b |
+| `--html PATH` | off | FR-10.4d. Writes the HTML rendering of the same report. A path is required — there is no stdout form, because a self-contained document is not something to pipe |
 | `--config PATH` | `./.agentic-review.yml` | |
 | `--no-checks` | off | Skips execution, recorded as `skipped` — never as passed |
 | `--ceiling N` | from config | |
