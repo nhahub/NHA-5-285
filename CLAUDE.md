@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-**Feature 001, the walking skeleton, is built** (User Story 1 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 44 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 346 tests run offline in under a minute, plus 5 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
+**Feature 001, the walking skeleton, is built** (User Story 1 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 47 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 424 tests run offline in under a minute, plus 6 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
 
 **Commands** (Python ≥3.12, via [uv](https://docs.astral.sh/uv/)):
 
 ```
 uv sync                                          # install
 uv run pytest                                    # full suite; -k or a path to narrow
-uv run lint-imports                              # the 5 structural contracts; what CI runs
+uv run lint-imports                              # the 6 structural contracts; what CI runs
 uv run --env-file .env agentic-review review      # run the tool itself
 ```
 
@@ -24,7 +24,7 @@ uv run python -m pytest
 
 `Docs/operation_guidelines.md` is the full how-to-install/run/troubleshoot guide; it describes what the code does today, not the specification.
 
-The work is an **agentic code reviewer**: a local CLI that reviews a TypeScript/JavaScript change set by parsing it, running the repository's own tests and type-check, and passing that evidence to a single model pass that emits schema-validated findings. Only the `review` command is implemented; `regression` and `schema` are not built.
+The work is an **agentic code reviewer**: a local CLI that reviews a TypeScript/JavaScript change set by parsing it, running the repository's own tests and type-check, and passing that evidence to a single model pass that emits schema-validated findings. The `review` and `render` commands are implemented; `regression` and `schema` are not built.
 
 ## Document authority — read this before editing any doc
 
@@ -96,7 +96,7 @@ Summary only — **`Docs/technical_stack.md` is the authority**, and carries the
 - **LangChain** for the provider interface, tool binding (FR-5.6a) and structured output (FR-5.6b); **LangGraph confined to `agents/`** (FR-5.8, amended v1.2 by ADR-0009, renamed v1.3 by ADR-0010) — every package under `core/` stays plain Python, callable without the framework. At ceiling zero the review step is a one-node graph, which is what makes FR-5.7's "configuration, not restructuring" literally true.
 - **A bundled Node resolver sidecar** answers depth-1 module resolution from the TypeScript compiler's own algorithm (FR-2.6f). Started at most once per invocation, shipped as package data, never fetched at review time. Node is a runtime prerequisite for authoritative depth 1 and **never** for installation — its absence degrades and reports (FR-2.6g, AC-12). The sidecar is private to CF-2; nothing outside it may know it exists.
 - **Pydantic** for the finding model, so the type, the JSON Schema (FR-0.4) and the `emit_finding` tool schema come from one definition — SRS §5 requires "one definition, not two".
-- **Typer + Rich** for CF-7, **pytest** for the CF-8 regression corpus.
+- **Typer + Rich** for CF-7, with **Jinja2** for the HTML rendering (FR-10.4d) — confined to `core/output/` by import contract 8, and its template is the wheel's first package-data file, read through `importlib.resources`. **pytest** for the CF-8 regression corpus.
 - Checks run as **subprocesses through the reviewed project's own toolchain** (FR-4.7). The harness never imports the project's dependencies, and never asks the project to install its own.
 
 Config lives in `.agentic-review.yml` at the repository root, with documented defaults and loud (never silent) validation failure. The provider credential comes from the environment or user-level config — never hard-coded, never committed. Default provider is the NVIDIA NIM free tier, reached through an OpenAI-compatible client so a swap is a base URL and a model name.
