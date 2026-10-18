@@ -472,6 +472,77 @@ Every FR and SC in spec.md maps to at least one task.
 | SC-009 | T033, T085 |
 | *(no spec 001 requirement)* `Docs/technical_stack.md` §6, §3.9 · FR-11.3 "alongside, never the only record" | T102–T109 (Phase 9, Langfuse) |
 
+## Phase 11: The HTML report (added 2026-10-18)
+
+**Purpose**: a third rendering of the same `ReviewReport` — one self-contained HTML document — produced either
+during a review (`review --html PATH`) or from a report written earlier (`render REPORT --html PATH`), from one
+renderer in `core/output/`.
+
+**Authority**: SRS **FR-10.4d (Should, new in v1)**, with FR-10.4a's "derived from the finding model and not
+produced independently" and FR-5.10's clean-versus-never-looked distinction; `Docs/technical_stack.md` §2, §3.1,
+§3.7, §4 (contract 8) and §5; `Docs/design/01-logical-architecture.md` §4; `contracts/cli.md` §`render`.
+No ADR: a templating library is a technology selection, which `CLAUDE.md` places in `technical_stack.md`, and no
+load-bearing constraint is reversed.
+
+**It is a Should.** v1 is complete without it. No acceptance criterion depends on it, Appendix B's "Verified by"
+column for CF-7 is unchanged, and AC-7 and AC-16 keep saying "in both outputs" — they are Must-level and must not
+come to depend on a Should.
+
+**T092 remains unchecked.** This phase implements only `--json PATH`, the named-file half of FR-025, because
+`render` needs a producer. Still T092's: `normalise_argv`, the optional-value `--json [PATH]` form, `--json` and
+`--json -` to **stdout** with the "Streams" switch that moves the summary to stderr, the `schema` command, and the
+`--version` callback — along with T090 and T091 in full. **User Story 5 is not complete and its checkpoint is not
+reached.**
+
+**The HTML gains no Langfuse trace id or URL**, for the reason T092 already records: the report carries none, and
+adding one would change the published schema, which needs a spec change first.
+
+**A boundary for later, needing its own ADR**: if the HTML ever gains client-side script, or is published anywhere
+(a gh-pages artifact, an email attachment sent by the tool), that is a distribution and data-egress decision of the
+ADR-0006/ADR-0007 kind, and FR-10.4d's no-script clause has to be reversed in a new record first.
+
+**Independent Test**: `review --json r.json --html a.html` on a repository with planted defects, then
+`render r.json --html b.html` from a directory that is not a repository and with no credential in the environment;
+`a.html` and `b.html` are byte-identical, open in a browser with no network request, and a `<script>` planted in a
+reviewed source file appears as text in a rationale rather than executing.
+
+### Documentation first for Phase 11
+
+- [X] T128 SRS v1: **FR-10.4d** and its rationale in §4.7; the CF-7 charter row; the §1.2 in-scope line; Appendix B (`FR-10.4a–c` to `FR-10.4a–d`, "Verified by" deliberately unchanged). No AC-17, and no §7 row — HTML was absent from v1, never excluded
+- [X] T129 [P] `Docs/technical_stack.md`: the §2 stack row; §3.1 package data and the `importlib.resources` precedent for `_vendor/resolver.js`; §3.7; the §4 contract table (**Six** to **Seven**, row 8, and why there is no 7 — reserved for Langfuse by T103); the §5 inventory row; the §7 pin after T134
+- [X] T130 [P] `Docs/design/01-logical-architecture.md` §4: `R3` in the fan-out diagram, `cli/` gains "write a file", two decision rows. `Docs/design/04-contracts.md` §6: the `render` command line and the `--html PATH` row
+- [X] T131 [P] `CLAUDE.md`: contract count 5 to 6 in both places; `review` **and `render`** implemented; Jinja2 in the stack bullet
+- [X] T132 [P] `contracts/cli.md`: the `--html PATH` row; the `--json` row narrowed to the named-file form this build offers; the Streams rows and the output-path preflight rule; the `## render` section with its exit-code ruling
+- [X] T133 [P] This phase header
+
+### Dependency and contract for Phase 11
+
+- [X] T134 `uv add jinja2` (floor `>=3.1`, where `jinja2.Markup` was removed and the escaping API settled); record the resolved `jinja2` and `markupsafe` versions in `Docs/technical_stack.md` §7. It may already be in `uv.lock` transitively through `jupyter` and `nbconvert`, so the lock may not move — say so in the commit message; it must still be a **direct** dependency
+- [X] T135 Add import contract **8** ("only core.output may import Jinja2", forbidding `jinja2` and `markupsafe` everywhere else, `cli` included) to `pyproject.toml` and update the `[tool.importlinter]` header comment; `uv run lint-imports` green
+
+### Tests for Phase 11 write first
+
+- [X] T136 [P] Create `tests/support/report_factory.py` holding the report `tests/unit/output/test_render.py::_report` builds inline; `_report` becomes a one-line delegation. It is what lets the template be iterated with **zero provider calls**, and the markdown wrapper reuses it
+- [X] T138 Write `tests/unit/output/test_load.py` and `tests/unit/output/test_html.py`: a self-contained document; required sections in order; anchors by `finding.id` and **never** the fingerprint, which collides for two same-category findings in one file; model-authored prose and a hostile file path escaped; a `no-tool-call` run never shown as clean; one sentence per verdict; degradations; absent stage durations omitted rather than printed as `None`; every exclusion listed past the terminal's cut-off; the run-metadata allow-list; byte-identical twice; `StrictUndefined`. For `load`: round-trip from `to_json`, identical HTML from a loaded report, an unknown schema version naming both versions, malformed JSON, a named missing field, an unknown field refused, and a message that never repeats a rejected value
+- [X] T142 [P] Write `tests/structural/test_template_escaping.py` (modelled on `test_git_confinement.py`): no `|safe`, autoescape block, `Markup`, script tag, absolute URL or `@import` in the template; no `model_dump`, `.items()` or `environ`; `autoescape is True` and `undefined is StrictUndefined`; the template resolves through `importlib.resources`; no `__file__` anywhere under `core/output/`
+- [X] T143 [P] Write `tests/unit/cli/test_render_command.py` and `tests/unit/cli/test_output_files.py`: `render` writes and exits 0, needs no repository, config or credential, **does not map a verdict onto its exit code**, and exits 3 naming a missing report, malformed JSON, an unknown schema version or an unwritable output; `_reject_json_to_stdout` catches a bare `--json`; `--json -` exits 3 and not Click's 2; `--html` into a missing directory exits 3 with the stand-in called 0 times
+- [X] T145 Write `tests/integration/test_html_report.py`: the HTML's findings match the JSON report (FR-027 extended to the third surface); **a saved report renders to the same HTML as the run did**; no planted credential in the text or the bytes; a `no-tool-call` run not shown as clean; a provider error says no review was performed; both files UTF-8 with newline endings; a preflight failure writes neither file
+
+### Implementation for Phase 11
+
+- [X] T137 Create `src/agentic_review/core/output/view.py` — the shared wording and derivations (`NO_TOOL_CALL_LINE`, the five verdict sentences, the not-reviewed reasons, severity counts, line spans, evidence lines, stage rows, and `run_rows` as an explicit **allow-list** so a field added to `RunMetadata` later cannot reach the HTML by accident); refactor `terminal.py` to import them and delete its local copies. The suite stays green with no test changes
+- [X] T139 Create `src/agentic_review/core/output/load.py`: `load_report(text) -> ReviewReport` and `ReportNotLoadable`. Text in, model out — the filesystem belongs to `cli/`. The schema version is checked **before** validation, because `WireModel` forbids extra fields and a later report would otherwise fail with an unreadable list of unexpected keys; validation errors carry dotted field paths and never the rejected values
+- [X] T140 Create `src/agentic_review/core/output/templates/report.html.j2` and `core/output/html.py`: `render_html(report, *, title=None) -> str`, the only module importing Jinja2. `autoescape=True` literally, `StrictUndefined`, the template read through `importlib.resources` and never `Path(__file__)`. It writes no file and reads no clock, environment, cwd or other file — the document's timestamp is `run.started_at`, which is what makes the two entry points byte-identical
+- [X] T141 [P] `scripts/render_html_demo.py`: build a report from `report_factory`, or load a JSON path, and write HTML. **Zero provider calls.** Move it earlier if template work starts before T140 is green
+- [X] T144 Extend `src/agentic_review/cli/app.py`: `--json PATH` and `--html PATH`, both validated through `_could_not_start` **before** the review runs so a mistyped path never costs a provider call; a `_write` helper that forces newline endings; the `render` command; `_reject_json_to_stdout` in `main()` — deliberately **not** named `normalise_argv`, which is T092's and does a different job
+
+### Verification for Phase 11
+
+- [X] T146 `uv run lint-imports` and `uv run pytest` green; update the test count in `CLAUDE.md`
+- [X] T147 [P] `uv build`, then confirm `agentic_review/core/output/templates/report.html.j2` is in the wheel. **Confirmed 2026-10-18: hatchling ships it from `packages = ["src/agentic_review"]` with no `force-include`, and it is the wheel's only non-Python file**
+- [ ] T148 **Maintainer, needs a real key and network:** `scripts/make_review_demo.py`, then `review --json r.json --html r.html`, then `render r.json --html r2.html`; diff the two HTML files and open both in a browser
+- [X] T149 [P] `Docs/operation_guidelines.md`: how to produce and read an HTML report, that it is self-contained and safe to send on, and that the JSON remains authoritative
+
 ## Notes
 
 - `[P]` tasks touch different files and depend on no unfinished task.
