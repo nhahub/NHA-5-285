@@ -12,6 +12,7 @@ Stability: 📦 stable across v1 patch releases.
 
 ```
 agentic-review review [OPTIONS]
+agentic-review render REPORT --html PATH
 agentic-review schema
 agentic-review --version
 ```
@@ -27,7 +28,9 @@ agentic-review --version
 | `--head REF` | a git ref | `HEAD` | `range` only: the ref reviewed, so a branch can be reviewed without checking it out. Rejected with any other scope. Unknown ref → exit 3 naming the ref. Refs that share no history → exit 3 |
 | `--pr URL` | `https://github.com/<owner>/<repo>/pull/<n>` | — | Reviews a **public** GitHub pull request: its head against the branch it targets — the repository's default branch unless `--base` names another (R-25). **Selects the `pull-request` scope by itself**; with `--scope` or `--head` → exit 3. Needs no local repository and reads no file from the current directory. Nothing from the pull request is executed and no configuration is read from it (SRS FR-10.3d). Malformed URL, repository unreachable, pull request or base not found → exit 3 naming it |
 | `--commit REF` | a git ref that resolves to a commit | — | Reviews what that one commit introduced, against its first parent (R-4). **Selects the `commit` scope by itself**, over the config's `scope`; `--scope commit` may be written too but is not needed. `--scope commit` without it → exit 3 naming `--commit`. With any other `--scope`, or with `--base` → exit 3 naming `--commit`. Unknown ref → exit 3 naming the ref. The config file cannot select this scope: a commit is named per run |
-| `--json [PATH]` | optional path | off | No value, or `-` → the report on **stdout only**. With a path → written to that file (R-18) |
+| `--json PATH` | file path | off | Writes the report to that file (R-18), UTF-8, `
+` endings, overwriting what is there. **The optional-value form is not offered in this build**: a bare `--json`, or `--json -`, exits 3 naming what is missing. The stdout form and its stream switch are still T092 |
+| `--html PATH` | file path | off | SRS FR-10.4d. Writes the HTML rendering of **the same report** to that file, same encoding and overwrite rule. A path is required; there is no stdout form. Rendered by `core/output/`, written by `cli/` |
 | `--config PATH` | file path | `<repo root>/.agentic-review.yml`; with `--pr`, **none** — the built-in defaults | An explicit path that does not exist → exit 3. The only way to give settings to a `--pr` review |
 | `--ceiling N` | integer ≥ 1 | config `agent.toolCallCeiling` (25, **placeholder, TBD-8**) | FR-017 |
 
@@ -40,9 +43,15 @@ Deferred and **not offered**: `--depth`, `--no-checks` (both 002/004), `--invest
 | `review` | terminal summary | ignored-settings notice, if any |
 | `review --json` | **exactly one JSON document**, UTF-8, trailing newline | terminal summary, notices |
 | `review --json out.json` | terminal summary | notices |
-| any preflight failure | **nothing** | the message |
+| `review --html out.html` | terminal summary | notices |
+| `review --json out.json --html out.html` | terminal summary | notices |
+| any preflight failure | **nothing** | the message; **no file is written**, neither JSON nor HTML |
 
 The terminal summary is plain text when the stream is not a TTY, and honours `NO_COLOR`.
+
+Both output paths are validated **before the review runs** — the parent directory must exist and the path must not
+be a directory — so a mistyped path never costs a provider call. A failure there is a preflight failure: exit 3,
+and neither file is written.
 
 ### Terminal summary: required content (FR-024)
 
@@ -93,6 +102,33 @@ Error in .agentic-review.yml
   agent.toolCallCeiling: Input should be greater than or equal to 1
 Nothing was reviewed. Fix the field above and re-run.
 ```
+
+## `render`
+
+```
+agentic-review render REPORT --html PATH
+```
+
+Re-renders a report this tool wrote earlier (SRS FR-10.4d). `REPORT` is the JSON file; `--html PATH` is required.
+It needs no repository, no config and no credential, reads nothing from the current directory, runs no git,
+initialises no tracing and touches no network — the same shape as `schema`. On success it prints one line,
+`Wrote <path>`, to stdout and exits 0.
+
+The rendering is **byte-identical** to the one `review --html` would have written for that report. That is what
+makes one renderer serve both entry points, and it is why nothing in the template may read the clock, the
+environment or the filesystem.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| **0** | The file was written |
+| **3** | Could not start: the report is missing, unreadable, a directory, not JSON, declares a schema version this build does not read, or fails validation; or the output path is unwritable |
+
+**`render` never exits 1 or 2.** It makes no judgement. FR-023 binds the exit status to *the review outcome*, and a
+verdict read out of a file on disk is not this run's outcome — letting a **stale** report set a CI job's status is the
+"found nothing versus never looked" confusion the exit-code table exists to prevent, one step removed. A script that
+wants the verdict reads it from the JSON, which is the machine surface.
 
 ## `schema`
 
