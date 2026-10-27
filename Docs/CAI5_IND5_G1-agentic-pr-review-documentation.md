@@ -49,11 +49,13 @@ flowchart TD
 | Part | State |
 |---|---|
 | Walking skeleton: find the change, one model call, checked findings, terminal summary | Built |
-| Choosing what to review: uncommitted work, staged work, a range of commits | Built |
+| Choosing what to review: uncommitted work, a range of commits | Built |
+| Choosing what to review: staged work, a single commit | Not built yet |
 | Reviewing a public pull request from its web address, read-only | Built |
 | A data file of the review and a web page report made from it | Built |
-| Tracing of each model call, for the team's own debugging | Built |
-| Automatic tests of the tool itself | 424 tests, run offline in under a minute, on Linux and Windows |
+| A diagram of the review, drawn as Mermaid | Not built yet |
+| Tracing of each model call, for the team's own debugging | Not built yet (Langfuse only supplies the model's instructions today) |
+| Automatic tests of the tool itself | 427 tests, run offline in under two minutes, on Linux and Windows |
 | Running the reviewed project's tests and type check | Not built yet |
 | Gathering the code around the change | Not built yet |
 | The set of known defects and the catch-rate score | Not built yet |

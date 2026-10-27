@@ -14,7 +14,7 @@ from pydantic.alias_generators import to_camel
 
 ScopeSetting = Literal["working-tree", "staged", "range"]
 
-DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash"  # PLACEHOLDER - chosen by test S-1 (research R-21)
+DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash"  # PLACEHOLDER - to be chosen by test S-1 (research R-21)
 DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1"  # NVIDIA NIM free tier (SRS §2.3)
 
 

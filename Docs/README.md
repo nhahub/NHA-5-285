@@ -4,10 +4,11 @@
 
 | Document | What it is |
 |---|---|
-| **[`agentic-code-review-srs-v1.md`](./agentic-code-review-srs-v1.md)** | **The specification for the version being built.** Normative — if you are implementing or reviewing an implementation, this is the document. Currently **v1.1**; §10 records what the design review changed and why. |
+| **[`agentic-code-review-srs-v1.md`](./agentic-code-review-srs-v1.md)** | **The project's only requirements specification, and the one for the version being built.** Normative — if you are implementing or reviewing an implementation, this is the document. Currently **v1.7**. Appendix C holds the requirements reserved for v2 and v3 and the business case; Appendix D records the narrower first-phase cut that was not adopted. Its revision history records each amendment, and §10 what the design review changed and why. |
 | [`technical_stack.md`](./technical_stack.md) | **What the system is built with** — libraries, protocols, repository layout, and the checks that enforce the seams. Subordinate to the specification: it never relaxes a requirement. |
 | [`adr/`](./adr/) | Architecture decision records. Why the system is shaped the way it is. Start with [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md), then [ADR-0007](./adr/0007-python-harness-typescript-target.md), then the [index](./adr/README.md). |
 | [`operation_guidelines.md`](./operation_guidelines.md) | **How to install, configure, run and troubleshoot the tool, and how to work on it.** Describes what the code does today, not the specification. Non-normative. |
+| [`system-design.md`](./system-design.md), [`system-design-block.md`](./system-design-block.md) | The level 1–3 system diagrams the HLRs are read from, as flowcharts and as block diagrams. Diagrams only. |
 | [`design/`](./design/) | **How the system is put together** — components, types, behaviour, contracts. Subordinate to both documents above: it introduces no requirement and no library. Start with [the design plan](./design/README.md). |
 
 Places where the analysis hand-off contradicts itself, or stops short of a decision design cannot make alone, are collected in [`DESIGN_BLOCKERS.md`](../DESIGN_BLOCKERS.md) at the repository root, with a response log for the analysis team.
@@ -18,8 +19,6 @@ Everything in [`Draft/`](./Draft/) is **non-normative**. It records analysis, ra
 
 | Document | What it is |
 |---|---|
-| [`Draft/agentic-code-review-srs.md`](./Draft/agentic-code-review-srs.md) | The full requirement catalogue across v1–v3. The identifier registry the ADRs cite. |
-| [`Draft/agentic-code-review-srs-ar.md`](./Draft/agentic-code-review-srs-ar.md) | Arabic translation of the catalogue. |
 | [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) | The analysis that selected v1's scope. Explains every inclusion and every cut. |
 | [`Draft/agent-harness-design.md`](./Draft/agent-harness-design.md) | Plain-language guide to the agent harness — tools, memory, environments, model selection. |
 | [`Draft/agentic-architecture-review.md`](./Draft/agentic-architecture-review.md) | Assessment of an external agentic-architecture review of [ADR-0001](./adr/0001-fixed-pipeline-with-bounded-agency.md): what to adopt, when, and what to reject. |
@@ -34,12 +33,13 @@ Everything in [`Draft/`](./Draft/) is **non-normative**. It records analysis, ra
 | [`Draft/tool-reference.md`](./Draft/tool-reference.md) | Neutral descriptions of seven comparable tools. |
 | [`Draft/feature-inventory.md`](./Draft/feature-inventory.md) | Feature tables with complexity estimates, planned and candidate. |
 | [`Draft/chat_result_*.md`](./Draft/) | Research and analysis session records. |
+| [`CAI5_IND5_G1-agentic-pr-review-documentation.md`](./CAI5_IND5_G1-agentic-pr-review-documentation.md) | Submission document: project planning, stakeholder analysis, data design (there is no database — see ADR-0005) and how the report looks. Non-normative; describes the project, not the specification. |
 
 ## How the documents relate
 
 ```mermaid
 flowchart TD
-    P["Draft/Agentic_Code_Review_Problem_Definition_v1.md<br/>the problem"] --> C["Draft/agentic-code-review-srs.md<br/>full catalogue, v1–v3"]
+    P["Draft/Agentic_Code_Review_Problem_Definition_v1.md<br/>the problem"] --> C["full catalogue, v1–v3<br/>(now SRS Appendix C)"]
     L["Draft/competitive-landscape.md<br/>Draft/tool-reference.md<br/>the market"] --> C
     C --> H["Draft/agent-harness-design.md<br/>how the agent layer works"]
     H --> A["adr/<br/>decisions"]

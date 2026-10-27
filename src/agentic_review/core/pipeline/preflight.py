@@ -11,7 +11,8 @@ the test-script prerequisite arrives in feature 002 — AC-9).
 | 4 | Credential available | The same |
 | 5 | Named refs exist | The pull request is opened — the only step that uses the network, and so the last |
 
-The ``staged`` scope and its checks arrive with User Story 4.
+The ``staged`` scope and its checks arrive with User Story 4. Until then check 3 refuses it: the config schema accepts
+it, so a file written now stays valid later (FR-1.2d), but asking for it must not reach the resolver.
 
 Check 4 establishes that a credential **can** be found; it does not hand the credential on. ``PreflightOk`` becomes
 pipeline state, and pipeline state is what every tracer attached to the graph receives and ships, so the value is
@@ -55,7 +56,14 @@ class PreflightOk:
     """Opened by check 5. Whoever holds this must ``close`` it when the run is over."""
 
 
+RESOLVED_SCOPES = ("working-tree", "range")
+"""The scopes ``resolve_change_set`` can resolve in this build; the pull-request scope is selected by ``--pr``."""
+
+
 def _scope_arguments_problem(kind: str, base: str | None, head: str | None) -> str | None:
+    if kind not in RESOLVED_SCOPES:
+        offered = " or ".join(RESOLVED_SCOPES)
+        return f"The {kind} scope is not available in this build; choose {offered}.\n{_FOOTER}"
     if kind == "range":
         if base is None:
             return f"The range scope needs a base to compare with: add --base REF.\n{_FOOTER}"

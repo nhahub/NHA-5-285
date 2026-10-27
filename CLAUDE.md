@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-**Feature 001, the walking skeleton, is built** (User Story 1 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 47 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 424 tests run offline in under a minute, plus 6 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
+**Feature 001, the walking skeleton, is built** (User Stories 1–2 and tasks Phases 10–11 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 47 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 427 tests run offline in under two minutes, plus 6 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
 
 **Commands** (Python ≥3.12, via [uv](https://docs.astral.sh/uv/)):
 
@@ -32,7 +32,7 @@ Exactly one document defines what to build at any time. The hierarchy is strict:
 
 | Document | Authority |
 |---|---|
-| `Docs/agentic-code-review-srs-v1.md` | **Normative.** The build target. Wins on any disagreement. |
+| `Docs/agentic-code-review-srs-v1.md` | **Normative.** The build target, and the project's only SRS. Wins on any disagreement. §1–§10 and Appendices A–B are what to build; Appendix C is the registry of requirements for v2/v3 and the business case; Appendix D is the narrower first-phase cut (srs-v2) that was not adopted. |
 | `Docs/technical_stack.md` | **Normative for technology selection only** — which library, which protocol, which layout. Subordinate to the SRS: it never relaxes a requirement. If a library cannot satisfy one, the library is wrong. |
 | `Docs/adr/*.md` | Normative *where cited by* the v1 SRS. |
 | `Docs/design/` | **How the system is put together** — components, types, behaviour, contracts. Subordinate to the SRS and the stack doc; introduces no requirement and no library. Start at `Docs/design/README.md`. |
@@ -43,7 +43,7 @@ Exactly one document defines what to build at any time. The hierarchy is strict:
 
 The split between the SRS and the stack document is deliberate: the SRS says *what must be true*, the stack says *what it is built with*, and ADR-0007 says *why that stack*. Library choices move — versions get pinned, packages get swapped — and those changes belong in `technical_stack.md`, not in an append-only ADR. Reversing ADR-0007's **reasoning** still needs a new ADR.
 
-`Docs/Draft/agentic-code-review-srs.md` is the full v1–v3 requirement catalogue and the identifier registry the ADRs cite; `Docs/Draft/mvp-scope.md` is the analysis that selected v1's scope and explains every cut. Both are historical records — they are *not* the build target, even though they read like specifications.
+Since SRS v1.7 the v1–v3 requirement catalogue and srs-v2 live inside the SRS (Appendices C and D); `Docs/Draft/agentic-code-review-srs.md` is only a redirect page kept so the append-only ADRs' links resolve. Do not add requirements anywhere but the SRS. `Docs/Draft/mvp-scope.md` is the analysis that selected v1's scope and explains every cut — a historical record, *not* the build target, even though it reads like a specification.
 
 ## Conventions that must be preserved
 
@@ -52,7 +52,6 @@ The split between the SRS and the stack document is deliberate: the SRS says *wh
 - **ADRs are append-only.** Never edit a decision to reflect a change of mind — write a new ADR that supersedes it, and update the status table in `Docs/adr/README.md`. Status values: Proposed / Accepted / Superseded / Deprecated. ADR-0006 through ADR-0011 are Accepted; the other five (0001–0005) are Proposed.
 - **Read ADR-0006 first, then ADR-0007, then ADR-0008 and ADR-0009.** 0006 was decided late and rescoped four earlier records (0001–0003, 0005), which were written assuming a GitHub Action was the only delivery surface. 0007, 0008 and 0009 are the records naming an implementation technology: 0007 amends one consequence of 0006 (distribution: PyPI, not npm); 0008 settles what the tool-call ceiling counts and how a review ends; 0009 declares the pipeline as a LangGraph graph and narrows FR-5.8 accordingly (see below).
 - Docs cross-link with relative paths and use mermaid diagrams throughout. Moving or renaming a file under `Docs/` requires fixing the inbound links in `Docs/README.md`, `Docs/adr/README.md`, and the SRS front matter.
-- `Docs/Draft/agentic-code-review-srs-ar.md` is an Arabic translation of the catalogue. Changes to the catalogue leave it stale; say so rather than silently diverging.
 
 ## Architecture the code will take
 
@@ -86,7 +85,7 @@ These are the ones that make v2 and v3 additions rather than rewrites. Treat a c
 - **FR-2.6g** — the resolver sidecar's absence degrades and reports; it never fails an invocation. An optional prerequisite must not quietly become a required one.
 - **FR-10.3d** *(new in v1.5, ADR-0011)* — a pull request is a stranger's code. Nothing from it is executed (no checkout, no checks) and no configuration is read from it, because the config file names the provider URL the API key is sent to. Everything pull-request-specific stays behind `PullRequestSource` in `core/changeset/pull_request.py`. **Its git-based implementation is interim**: it is to be replaced by one backed by the official GitHub MCP server (`github/github-mcp-server`), which needs its own ADR (a GitHub token, and an MCP client that may not live under `core/`). Do not grow the hand-written reader.
 
-`Docs/agentic-code-review-srs-v1.md` §6 lists sixteen acceptance criteria (AC-1…AC-16; AC-13/14 added in v1.1, AC-15/16 later). AC-5 and AC-7 are flagged as the ones to defend under schedule pressure; AC-8, AC-10 and AC-12 are the cheap structural checks on the constraints above. AC-10's import-contract wording was updated alongside FR-5.8 in v1.2.
+`Docs/agentic-code-review-srs-v1.md` §6 lists seventeen acceptance criteria (AC-1…AC-17; AC-13/14 added in v1.1, AC-15/16 later, AC-17 in v1.6). AC-5 and AC-7 are flagged as the ones to defend under schedule pressure; AC-8, AC-10 and AC-12 are the cheap structural checks on the constraints above. AC-10's import-contract wording was updated alongside FR-5.8 in v1.2.
 
 ### Planned stack and environment
 

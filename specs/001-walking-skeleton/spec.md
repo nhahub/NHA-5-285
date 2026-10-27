@@ -237,7 +237,7 @@ A scannable rollup of the trailing italic clause on each requirement above. `src
 | FR-007 | FR-10.3c | | `core/changeset/model.py`, `core/changeset/diff_parser.py` |
 | FR-008 | FR-3.5 | | `core/config/settings.py`, `core/changeset/exclusion.py` |
 | FR-009 | *(none — TS/JS-only scope; a project decision, not an SRS Must)* | | `core/changeset/diff_parser.py` |
-| FR-010 | *(none — "nothing to review" outcome; not separately numbered in the SRS)* | | `agents/pipeline_agent.py`, `core/output/verdict.py` |
+| FR-010 | *(none — "nothing to review" outcome; not separately numbered in the SRS)* | the `nothing-to-review` edge in the pipeline graph — **T087** | `agents/pipeline_agent.py`, `core/output/verdict.py` |
 | FR-011 | FR-5.7a, FR-5.1 | | `agents/review_port.py`, `agents/review_reporting_agent.py` |
 | FR-012 | FR-2.5b | | `core/assembly/prompt.py` |
 | FR-013 | FR-5.6a | | `core/findings/port.py`, `core/findings/validation.py` |
@@ -249,13 +249,13 @@ A scannable rollup of the trailing italic clause on each requirement above. `src
 | FR-019 | FR-2.5b, FR-11.1 | | `core/assembly/budget.py`, `core/assembly/prompt.py` |
 | FR-020 | FR-11.2 | | `agents/review_reporting_agent.py` |
 | FR-021 | FR-11.3 | | `core/review/accounting.py` |
-| FR-022 | FR-11.2 | | `core/pipeline/run.py`, `core/findings/report.py` |
+| FR-022 | FR-11.2 | | `agents/pipeline_agent.py`, `core/findings/report.py` |
 | FR-023 | FR-10.4c | | `core/output/verdict.py`, `cli/exit_codes.py` |
 | FR-024 | FR-8.1b | | `core/output/terminal.py` |
 | FR-025 | FR-8.2a, FR-10.4b | | `core/output/json_out.py` |
 | FR-026 | FR-8.2c, FR-11.3 | context depth — **004** | `core/findings/report.py` |
 | FR-027 | FR-10.4a | | `core/output/terminal.py`, `core/output/json_out.py` |
-| FR-028 | FR-0.4 | | `cli/app.py` |
+| FR-028 | FR-0.4 | the `schema` command — **T092** | `cli/app.py` |
 | FR-029 | FR-11.3 | | `core/pipeline/timing.py`, `core/findings/report.py` |
 | FR-030 | FR-10.3c, FR-5.8, FR-10.2 | context-provider clauses — **004** | `tests/structural/` |
 | FR-031 | *(none — Principle VII, constitution)* | | `tests/` |
@@ -263,7 +263,7 @@ A scannable rollup of the trailing italic clause on each requirement above. `src
 
 **No SRS parent**: FR-009, FR-010, FR-031 — each maps to a project or constitution decision, not a numbered SRS Must/Should.
 
-**SRS IDs realised in code with no feature-001 owner**: FR-0.3 (`core/findings/port.py` — the provider-independent interface itself), FR-5.1 (`core/agent/graph.py` — no checkpointer), FR-5.5 (`core/findings/fingerprint.py` — cross-run de-duplication, v2).
+**SRS IDs realised in code with no feature-001 owner**: FR-0.3 (`core/findings/port.py` — the provider-independent interface itself), FR-5.1 (`agents/review_reporting_agent.py` — no checkpointer), FR-5.5 (`core/findings/fingerprint.py` — cross-run de-duplication, v2).
 
 A future feature's own traceability subsection follows this same shape, in its own `specs/NNN-*/spec.md`.
 
