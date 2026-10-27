@@ -61,6 +61,8 @@ v2 also makes five changes to the HLRs themselves (see §3.2):
 
 ### 0.3 Before this becomes the build target
 
+*2026-10-27: v1's revision 1.6 adopted this document's five amendments (FR-5.7, FR-6.3a, FR-8.2b, FR-8.2c, FR-8.2d), the amended AC-2, FR-8.5 and AC-17. Its cut — the 37 requirements it moves out of scope, including FR-5.6a and FR-11.2 — was not adopted, so what follows still applies to that.*
+
 Until this draft is accepted, **v1 stays the normative build target.** Two things have to happen first:
 
 1. **An ADR.** v2 removes two of the constraints that [`CLAUDE.md`](../CLAUDE.md) calls load-bearing: **FR-5.6a**, which says findings enter only through a validated tool call, and **FR-11.2**, which says every failure is reported. The project rule is that dropping one of these needs an ADR.

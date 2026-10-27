@@ -9,7 +9,7 @@
 
 Two things:
 
-1. **Does every acceptance criterion have a mechanism?** Sixteen criteria, sixteen answers — or the design is not finished.
+1. **Does every acceptance criterion have a mechanism?** Sixteen criteria, sixteen answers — or the design is not finished. *SRS v1.6 added AC-17 (the Mermaid report, FR-8.5); its mechanism is not designed yet, so this question is open again for that one criterion.*
 2. **What counts as a catch?** FR-6.2f requires a documented, line-independent rule. Writing it is design's job, and it is the single most consequential thing in this document, because the catch rate is the project's primary instrument.
 
 ---
@@ -101,7 +101,7 @@ tests/corpus/
 | # | Criterion | Mechanism | Where the design provides it |
 |---|---|---|---|
 | **AC-1** | End-to-end review of a public repository, free tier | Integration test against a pinned public repository | M3 §1 pipeline |
-| **AC-2** | A finding cites a real check result | Assert ≥ 1 finding with `evidence.kind == "check"` | M2 §3.4 `EvidenceRef` |
+| **AC-2** | A change that breaks a test or the type-check yields a finding citing that result *(amended in SRS v1.6)* | Assert ≥ 1 finding with `evidence.kind == "check"` | M2 §3.4 `EvidenceRef` |
 | **AC-3** | JSON validates; records depth, model, scope | Schema validation in the test | M4 §5 |
 | **AC-4** | Rule-derived findings name the rule | Assert `ruleId` present for rule-matched cases | M4 §4.1 |
 | **AC-5** | Harness runs as a test, reports a catch rate | The corpus test | §1, §2 |
@@ -116,8 +116,9 @@ tests/corpus/
 | **AC-14** | Depth 2 **and** no resolver ⇒ **both** degradations | One run, both capabilities removed | M2 §3.5 |
 | **AC-15** | Every finding cites evidence or is marked unverified | `evidence` is **required** in the tool schema | M4 §4.1 |
 | **AC-16** | No tool call ⇒ distinguishable from a clean review | `no-tool-call` degradation | M2 §3.5 |
+| **AC-17** | The visual report is Mermaid that renders and shows the JSON report's findings *(new in SRS v1.6)* | **Not designed yet** — what the diagram shows is a design decision (FR-8.5) | — |
 
-**All sixteen are executable.** None requires reading the code to decide whether it passed.
+**All sixteen designed so far are executable.** None requires reading the code to decide whether it passed. AC-17 has no mechanism yet.
 
 ### The two cheapest, and the two most valuable
 
@@ -166,8 +167,8 @@ Appendix B of the specification maps requirement → core function → acceptanc
 | CF-3 | `core/execution/` | AC-2, **AC-7** |
 | CF-4 | `core/assembly/` | AC-1, AC-3; budget policy by unit test |
 | CF-5 | `core/findings/` | AC-3, AC-13, **AC-15** |
-| CF-6 | `core/agent/` | AC-2, AC-11, AC-13, AC-16, AC-10 (contract 3) |
-| CF-7 | `core/output/` + `cli/` | AC-1, AC-3, AC-9, AC-10 (contract 1) |
+| CF-6 | `agents/` *(was `core/agent/`; moved by ADR-0010)* | AC-2, AC-11, AC-13, AC-16, AC-10 (contract 3) |
+| CF-7 | `core/output/` + `cli/` | AC-1, AC-3, AC-9, AC-10 (contract 1), AC-17 |
 | CF-8 | `core/patterns/` + `tests/corpus/` | AC-4, AC-5, AC-6, AC-11 |
 | CF-9 | `core/config/` | **AC-9** |
 
@@ -198,6 +199,6 @@ No module is unverified, and no criterion lacks a mechanism.
 | Catch rate is **never reported without** a false-positive figure | Recall alone is gamed by flagging everything |
 | Three repeats, median reported | A single sample from a non-deterministic model is an anecdote |
 | Four test layers; three run offline in seconds | Protects the iteration speed ADR-0006 was chosen for |
-| Sixteen criteria, sixteen mechanisms, all executable | The design is checkable, not just describable |
+| Sixteen criteria, sixteen mechanisms, all executable (AC-17, added in SRS v1.6, still needs one) | The design is checkable, not just describable |
 
 **Open:** TBD-6's targets, and S-1's result.

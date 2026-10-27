@@ -166,7 +166,7 @@ The diagrams describe the whole product, not just v1. Most of what they show is 
 | HLR-15 | **Yes** | FR-4.6: the agent cannot trigger checks. At step ceiling zero it has no investigation tools either (FR-5.7) |
 | HLR-16, 17, 18 | **Yes.** CF-7 | FR-8.1b (terminal summary), FR-8.2a (JSON) |
 | HLR-19 | **v3** | All GitHub integration is deferred to v3 (SRS §7, ADR-0006) |
-| HLR-20 | **No** | No SRS requirement covers a Mermaid report, so it has no version assigned |
+| HLR-20 | **Yes.** CF-7 | FR-8.5, adopted into the SRS in v1.6 from srs-v2 *(until v1.5 no SRS requirement covered a Mermaid report)* |
 | HLR-21 | **Yes, in spirit** | Adapters render findings but never decide what is a finding (FR-10.2) |
 | HLR-22 | **Yes** | ADR-0001: our code owns orchestration, not the model |
 | HLR-23 | **Yes** | CF-1 … CF-9 block structure |
@@ -191,4 +191,4 @@ This is expected at this level of abstraction, but anyone reading the diagrams a
 | Q-3 | ~~Is **Rule Matching** a deterministic check that produces its own findings?~~ **Moot:** HLR-14 is out of scope. | Findings keep a single entry point, `emit_finding` (FR-5.6a) |
 | Q-4 | ~~What does the **dark green fill** mean?~~ **Resolved:** dark green marks a **decided** component. | HLR-3, 4, 5, 7a and 7b are marked Decided |
 | Q-5 | ~~Who consumes Reporting's **output edge** in level 1?~~ **Resolved:** the edge is removed from the design. | The consumer isn't drawn. The v1 persona gap in SRS §2.5 and R-5 still applies |
-| Q-6 | ~~What is **Visual Reporting**?~~ **Resolved:** a report made as a **Mermaid** diagram, as in the earlier sketch in [`../../system-design-block.md`](../../system-design-block.md). | HLR-20 now says so. It still has no SRS requirement or version |
+| Q-6 | ~~What is **Visual Reporting**?~~ **Resolved:** a report made as a **Mermaid** diagram, as in the earlier sketch in [`../../system-design-block.md`](../../system-design-block.md). | HLR-20 now says so. Backed by FR-8.5 since SRS v1.6 |

@@ -4,10 +4,12 @@
 
 | Document | What it is |
 |---|---|
-| **[`agentic-code-review-srs-v1.md`](./agentic-code-review-srs-v1.md)** | **The specification for the version being built.** Normative — if you are implementing or reviewing an implementation, this is the document. Currently **v1.1**; §10 records what the design review changed and why. |
+| **[`agentic-code-review-srs-v1.md`](./agentic-code-review-srs-v1.md)** | **The specification for the version being built.** Normative — if you are implementing or reviewing an implementation, this is the document. Currently **v1.6**; its revision history records each amendment, and §10 what the design review changed and why. |
+| [`agentic-code-review-srs-v2.md`](./agentic-code-review-srs-v2.md) | A second, narrower attempt at the first MVP phase, cut down to the HLR diagrams. **Draft, not the build target.** Its amendments and FR-8.5 were adopted into the specification in v1.6; the rest of its cut was not. |
 | [`technical_stack.md`](./technical_stack.md) | **What the system is built with** — libraries, protocols, repository layout, and the checks that enforce the seams. Subordinate to the specification: it never relaxes a requirement. |
 | [`adr/`](./adr/) | Architecture decision records. Why the system is shaped the way it is. Start with [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md), then [ADR-0007](./adr/0007-python-harness-typescript-target.md), then the [index](./adr/README.md). |
 | [`operation_guidelines.md`](./operation_guidelines.md) | **How to install, configure, run and troubleshoot the tool, and how to work on it.** Describes what the code does today, not the specification. Non-normative. |
+| [`system-design.md`](./system-design.md), [`system-design-block.md`](./system-design-block.md) | The level 1–3 system diagrams the HLRs are read from, as flowcharts and as block diagrams. Diagrams only. |
 | [`design/`](./design/) | **How the system is put together** — components, types, behaviour, contracts. Subordinate to both documents above: it introduces no requirement and no library. Start with [the design plan](./design/README.md). |
 
 Places where the analysis hand-off contradicts itself, or stops short of a decision design cannot make alone, are collected in [`DESIGN_BLOCKERS.md`](../DESIGN_BLOCKERS.md) at the repository root, with a response log for the analysis team.
@@ -34,6 +36,7 @@ Everything in [`Draft/`](./Draft/) is **non-normative**. It records analysis, ra
 | [`Draft/tool-reference.md`](./Draft/tool-reference.md) | Neutral descriptions of seven comparable tools. |
 | [`Draft/feature-inventory.md`](./Draft/feature-inventory.md) | Feature tables with complexity estimates, planned and candidate. |
 | [`Draft/chat_result_*.md`](./Draft/) | Research and analysis session records. |
+| [`CAI5_IND5_G1-agentic-pr-review-documentation.md`](./CAI5_IND5_G1-agentic-pr-review-documentation.md) | Submission document: project planning, stakeholder analysis, data design (there is no database — see ADR-0005) and how the report looks. Non-normative; describes the project, not the specification. |
 
 ## How the documents relate
 

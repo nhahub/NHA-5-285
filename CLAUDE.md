@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-**Feature 001, the walking skeleton, is built** (User Story 1 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 47 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 424 tests run offline in under a minute, plus 6 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
+**Feature 001, the walking skeleton, is built** (User Stories 1–2 and tasks Phases 10–11 complete; `specs/001-walking-skeleton/tasks.md` tracks the rest). `src/agentic_review/` has 47 Python modules — CLI, pipeline, and the CF-1/CF-4/CF-5/CF-6/CF-7/CF-9 core functions; CF-2, CF-3 and CF-8 are not built yet (features 004, 002, 003). 427 tests run offline in under two minutes, plus 6 import-linter structural contracts and a GitHub Actions CI matrix on Python 3.12/3.13, Linux and Windows.
 
 **Commands** (Python ≥3.12, via [uv](https://docs.astral.sh/uv/)):
 
@@ -33,6 +33,7 @@ Exactly one document defines what to build at any time. The hierarchy is strict:
 | Document | Authority |
 |---|---|
 | `Docs/agentic-code-review-srs-v1.md` | **Normative.** The build target. Wins on any disagreement. |
+| `Docs/agentic-code-review-srs-v2.md` | **Draft — not the build target.** A second attempt at the first MVP phase, cut to the HLR diagrams. Its five amendments, FR-8.5 and AC-17 were adopted into the v1 SRS in v1.6; the requirements it moves out of scope stay in force. |
 | `Docs/technical_stack.md` | **Normative for technology selection only** — which library, which protocol, which layout. Subordinate to the SRS: it never relaxes a requirement. If a library cannot satisfy one, the library is wrong. |
 | `Docs/adr/*.md` | Normative *where cited by* the v1 SRS. |
 | `Docs/design/` | **How the system is put together** — components, types, behaviour, contracts. Subordinate to the SRS and the stack doc; introduces no requirement and no library. Start at `Docs/design/README.md`. |
@@ -86,7 +87,7 @@ These are the ones that make v2 and v3 additions rather than rewrites. Treat a c
 - **FR-2.6g** — the resolver sidecar's absence degrades and reports; it never fails an invocation. An optional prerequisite must not quietly become a required one.
 - **FR-10.3d** *(new in v1.5, ADR-0011)* — a pull request is a stranger's code. Nothing from it is executed (no checkout, no checks) and no configuration is read from it, because the config file names the provider URL the API key is sent to. Everything pull-request-specific stays behind `PullRequestSource` in `core/changeset/pull_request.py`. **Its git-based implementation is interim**: it is to be replaced by one backed by the official GitHub MCP server (`github/github-mcp-server`), which needs its own ADR (a GitHub token, and an MCP client that may not live under `core/`). Do not grow the hand-written reader.
 
-`Docs/agentic-code-review-srs-v1.md` §6 lists sixteen acceptance criteria (AC-1…AC-16; AC-13/14 added in v1.1, AC-15/16 later). AC-5 and AC-7 are flagged as the ones to defend under schedule pressure; AC-8, AC-10 and AC-12 are the cheap structural checks on the constraints above. AC-10's import-contract wording was updated alongside FR-5.8 in v1.2.
+`Docs/agentic-code-review-srs-v1.md` §6 lists seventeen acceptance criteria (AC-1…AC-17; AC-13/14 added in v1.1, AC-15/16 later, AC-17 in v1.6). AC-5 and AC-7 are flagged as the ones to defend under schedule pressure; AC-8, AC-10 and AC-12 are the cheap structural checks on the constraints above. AC-10's import-contract wording was updated alongside FR-5.8 in v1.2.
 
 ### Planned stack and environment
 
