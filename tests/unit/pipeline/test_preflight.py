@@ -85,6 +85,14 @@ def test_range_named_by_the_config_file_needs_a_base_too(repo: RepoBuilder, sour
     assert "--base REF" in _message(preflight(repo.root, None, sources))
 
 
+def test_a_scope_this_build_cannot_resolve_is_refused_before_resolution(
+    repo: RepoBuilder, sources: CredentialSources
+) -> None:
+    # The config schema accepts `staged` (FR-1.2d); asking for it used to reach the resolver and crash with exit 1.
+    repo.write(".agentic-review.yml", "scope: staged\n")
+    assert "The staged scope is not available in this build" in _message(preflight(repo.root, None, sources))
+
+
 def test_range_without_a_base_names_the_option(repo: RepoBuilder, sources: CredentialSources) -> None:
     assert "add --base REF" in _message(preflight(repo.root, None, sources, scope="range"))
 

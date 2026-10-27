@@ -373,7 +373,7 @@ default silently.
 ```yaml
 schemaVersion: 1
 
-scope: working-tree            # only working-tree works today; staged and range arrive with User Story 4
+scope: working-tree            # working-tree or range today; staged is refused (exit 3) until User Story 4
 exclude:                       # ADDED to the default list, never replacing it
   - "**/*.stories.tsx"
   - "src/legacy/**"
@@ -543,7 +543,7 @@ the JSON.
 | Traceback ending `AuthenticationError: Error code: 401` or `403` | Key invalid, revoked or without access to that model | Check or recreate the key |
 | Traceback ending `APIConnectionError` / `APITimeoutError` | No network, proxy, or endpoint down | Check connectivity and `agent.baseUrl` |
 | Traceback ending `RateLimitError: Error code: 429` | Free-tier rate limit | Wait and retry |
-| Traceback ending `NotImplementedError: the staged scope arrives with User Story 4` | `scope: staged` in the config | Remove `scope` or set `working-tree` |
+| `The staged scope is not available in this build` (exit 3) | `scope: staged` in the config | Remove `scope` or set `working-tree` or `range` |
 | `--scope: 'staged' is not available in this build` (exit 3) | Only `working-tree` and `range` are built | Use one of those, or `--pr` |
 | `The range scope needs a base to compare with` (exit 3) | `--scope range` (or `scope: range`) without `--base` | Add `--base REF` |
 | `The range base '...' does not exist` / `The range head '...' does not exist` (exit 3) | A mistyped or unfetched ref | `git fetch`, or name an existing branch, tag or commit |
