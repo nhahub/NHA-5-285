@@ -2,7 +2,7 @@
 
 An **ADR** is a short document that records one architectural decision: what we were choosing between, what we picked, and what we now have to live with. It is written once, at the moment of the decision, and then left alone. If we later change our minds, we write a *new* ADR that supersedes the old one rather than editing history — so that a year from now, someone can see not just what we chose but what we knew at the time.
 
-These records use the same plain-language style as [`agent-harness-design.md`](../Draft/agent-harness-design.md), which is the narrative explanation these decisions came out of. Every requirement referenced is stated in words, with its identifier in brackets for traceability — normative for the current version in [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md), and catalogued across all versions in [`Draft/agentic-code-review-srs.md`](../Draft/agentic-code-review-srs.md).
+These records use the same plain-language style as [`agent-harness-design.md`](../Draft/agent-harness-design.md), which is the narrative explanation these decisions came out of. Every requirement referenced is stated in words, with its identifier in brackets for traceability — normative for the current version in [`agentic-code-review-srs-v1.md`](../agentic-code-review-srs-v1.md), and catalogued across all versions in its Appendix C. *(The catalogue that ADR-0003 and ADR-0005 link to as `Draft/agentic-code-review-srs.md` was merged into that appendix on 2026-10-27; the old path is a redirect page.)*
 
 ## The records
 

@@ -32,8 +32,7 @@ Exactly one document defines what to build at any time. The hierarchy is strict:
 
 | Document | Authority |
 |---|---|
-| `Docs/agentic-code-review-srs-v1.md` | **Normative.** The build target. Wins on any disagreement. |
-| `Docs/agentic-code-review-srs-v2.md` | **Draft — not the build target.** A second attempt at the first MVP phase, cut to the HLR diagrams. Its five amendments, FR-8.5 and AC-17 were adopted into the v1 SRS in v1.6; the requirements it moves out of scope stay in force. |
+| `Docs/agentic-code-review-srs-v1.md` | **Normative.** The build target, and the project's only SRS. Wins on any disagreement. §1–§10 and Appendices A–B are what to build; Appendix C is the registry of requirements for v2/v3 and the business case; Appendix D is the narrower first-phase cut (srs-v2) that was not adopted. |
 | `Docs/technical_stack.md` | **Normative for technology selection only** — which library, which protocol, which layout. Subordinate to the SRS: it never relaxes a requirement. If a library cannot satisfy one, the library is wrong. |
 | `Docs/adr/*.md` | Normative *where cited by* the v1 SRS. |
 | `Docs/design/` | **How the system is put together** — components, types, behaviour, contracts. Subordinate to the SRS and the stack doc; introduces no requirement and no library. Start at `Docs/design/README.md`. |
@@ -44,7 +43,7 @@ Exactly one document defines what to build at any time. The hierarchy is strict:
 
 The split between the SRS and the stack document is deliberate: the SRS says *what must be true*, the stack says *what it is built with*, and ADR-0007 says *why that stack*. Library choices move — versions get pinned, packages get swapped — and those changes belong in `technical_stack.md`, not in an append-only ADR. Reversing ADR-0007's **reasoning** still needs a new ADR.
 
-`Docs/Draft/agentic-code-review-srs.md` is the full v1–v3 requirement catalogue and the identifier registry the ADRs cite; `Docs/Draft/mvp-scope.md` is the analysis that selected v1's scope and explains every cut. Both are historical records — they are *not* the build target, even though they read like specifications.
+Since SRS v1.7 the v1–v3 requirement catalogue and srs-v2 live inside the SRS (Appendices C and D); `Docs/Draft/agentic-code-review-srs.md` is only a redirect page kept so the append-only ADRs' links resolve. Do not add requirements anywhere but the SRS. `Docs/Draft/mvp-scope.md` is the analysis that selected v1's scope and explains every cut — a historical record, *not* the build target, even though it reads like a specification.
 
 ## Conventions that must be preserved
 
@@ -53,7 +52,6 @@ The split between the SRS and the stack document is deliberate: the SRS says *wh
 - **ADRs are append-only.** Never edit a decision to reflect a change of mind — write a new ADR that supersedes it, and update the status table in `Docs/adr/README.md`. Status values: Proposed / Accepted / Superseded / Deprecated. ADR-0006 through ADR-0011 are Accepted; the other five (0001–0005) are Proposed.
 - **Read ADR-0006 first, then ADR-0007, then ADR-0008 and ADR-0009.** 0006 was decided late and rescoped four earlier records (0001–0003, 0005), which were written assuming a GitHub Action was the only delivery surface. 0007, 0008 and 0009 are the records naming an implementation technology: 0007 amends one consequence of 0006 (distribution: PyPI, not npm); 0008 settles what the tool-call ceiling counts and how a review ends; 0009 declares the pipeline as a LangGraph graph and narrows FR-5.8 accordingly (see below).
 - Docs cross-link with relative paths and use mermaid diagrams throughout. Moving or renaming a file under `Docs/` requires fixing the inbound links in `Docs/README.md`, `Docs/adr/README.md`, and the SRS front matter.
-- `Docs/Draft/agentic-code-review-srs-ar.md` is an Arabic translation of the catalogue. Changes to the catalogue leave it stale; say so rather than silently diverging.
 
 ## Architecture the code will take
 

@@ -1,28 +1,31 @@
 # Software Requirements Specification — Agentic Code Review v1
 
-**Status:** Baselined · **Version:** 1.6 · **Date:** 2026-10-27
-**Scope:** Local command-line reviewer for TypeScript/JavaScript
-**Audience:** Contributors building v1, and reviewers verifying that a change meets it
+**Status:** Baselined · **Version:** 1.7 · **Date:** 2026-10-27
+**Scope:** Local command-line reviewer for TypeScript/JavaScript, plus the registry of requirements reserved for later versions
+**Audience:** Contributors building v1, reviewers verifying that a change meets it, and anyone planning beyond v1
 
 ---
 
 ## 0. About this document
 
-This is the **authoritative specification for the version being built**. It is self-contained: everything required to implement and verify v1 is here.
+This is the **only software requirements specification for the project**, and the **authoritative specification for the version being built**. It is self-contained: everything required to implement and verify v1 is here, and so is every requirement identifier reserved for later versions.
 
-It was derived from the analysis in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md), which selected this subset from the larger requirement catalogue in [`Draft/agentic-code-review-srs.md`](./Draft/agentic-code-review-srs.md). Those documents remain as the record of *why* — the rationale, the options weighed, and the requirements deferred. **Where they disagree with this document, this document wins.**
+§1–§10 and Appendices A–B specify v1. Appendix C holds what was catalogued for later versions: the business case behind the whole roadmap, the GitHub integration deferred to v3, and the text of every requirement not yet scheduled. Appendix D records a narrower first-phase cut that was considered and not adopted. **Only §1–§10 and Appendices A–B are the build target**; Appendices C and D are normative only in that their identifiers are reserved and may not be reused.
+
+*Since v1.7 this document replaces two others, which were merged into it and removed: the v1–v3 requirement catalogue (`Draft/agentic-code-review-srs.md`, together with its Arabic translation) and the second first-phase attempt (`agentic-code-review-srs-v2.md`). Their earlier text is in the repository history.*
+
+It was derived from the analysis in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md), which remains as the record of *why* — the rationale, the options weighed, and the requirements deferred. **Where it disagrees with this document, this document wins.**
 
 | Document | Role |
 |---|---|
-| **This document** | What v1 is. Normative. |
+| **This document** | What v1 is, and the identifiers reserved for what follows. Normative. |
 | [`technical_stack.md`](./technical_stack.md) | What v1 is **built with** — libraries, protocols, layout. Subordinate to this document: a technology choice never relaxes a requirement. |
 | [`adr/`](./adr/) | Architecture decisions and their reasoning. Normative where cited below. |
-| [`Draft/agentic-code-review-srs.md`](./Draft/agentic-code-review-srs.md) | The full requirement catalogue across v1–v3 and beyond. Historical and forward-looking; not the build target. |
 | [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) | The analysis that selected this scope. Explains every inclusion and every cut. |
 | [`Draft/agent-harness-design.md`](./Draft/agent-harness-design.md) | Plain-language design guide for the harness layer. |
 | [`Draft/`](./Draft/) (remainder) | Problem definition, competitive landscape, tool reference, feature inventory. Background. |
 
-**Requirement identifiers are inherited unchanged** from the catalogue, so every cross-reference in the ADRs and design documents stays valid. Requirements introduced by this baseline are marked **(new in v1)**.
+**Requirement identifiers are stable.** They were inherited unchanged from the catalogue that Appendix C now holds, so every cross-reference in the ADRs and design documents stays valid. Requirements introduced by this baseline are marked **(new in v1)**.
 
 ### Revision history
 
@@ -34,7 +37,8 @@ It was derived from the analysis in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md)
 | 1.3 | 2026-09-20 | **Agents live in their own package**, decided in [ADR-0010](./adr/0010-agents-package-separate-from-core.md). FR-5.8 and AC-10 are restated over the agents package instead of an enumeration of core modules; which modules may touch the framework is unchanged. *(Entry added in v1.6: the amendment was made without one.)* |
 | **1.4** | **2026-10-09** | **A fourth change scope.** FR-10.3a gains one selection: the changes introduced by a single named commit. No requirement was renumbered and nothing was removed; FR-10.3b and FR-10.3c are untouched, because the new scope produces the same files-and-hunks structure as the other three. §1.2 is updated to match. **FR-4.8 (new)** — under that scope no check is executed; each is recorded as skipped. |
 | **1.5** | **2026-10-09** | **Reading a public pull request**, decided in [ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md). FR-10.3a gains a fifth selection — a public pull request named by its URL — and lets a comparison name the ref it reviews. **FR-10.3d (new)** — nothing from a pull request is executed, and no configuration is read from it. FR-4.8 is extended to the pull-request scope. §1.2 and §7 no longer say "GitHub integration of any kind": reading a pull request's change set is in v1, and everything else of GitHub stays v3. FR-10.1 is unchanged and still true. |
-| **1.6** | **2026-10-27** | **Amendments adopted from [`agentic-code-review-srs-v2.md`](./agentic-code-review-srs-v2.md).** Where this document and srs-v2 disagreed, srs-v2's amended text is adopted: **FR-5.7** (the calls that hand over findings are counted, without naming the tool), **FR-6.3a** (a rule no longer needs its own regression case), **FR-8.2b** (the tool-schema clause leaves it; FR-5.6a and §5 still require the property), **FR-8.2c** (whether the ceiling was reached replaces the investigation-tools flag and the completion status), **FR-8.2d** (the minimum breakdown is the total and the emitting count) and **AC-2** (it describes its own run and also verifies FR-4.2). **FR-8.5 (new)**, a Mermaid visual report, and **AC-17 (new)** move into scope. No requirement was renumbered. Nothing else from srs-v2 is adopted: the 37 requirements it places out of scope remain in force here, and FR-4.8, FR-10.3d and FR-10.3a's five selections, which srs-v2 predates, are unchanged. Revision entries 1.2 and 1.3 are added. |
+| **1.6** | **2026-10-27** | **Amendments adopted from `agentic-code-review-srs-v2.md`** (since merged into Appendix D). Where this document and srs-v2 disagreed, srs-v2's amended text is adopted: **FR-5.7** (the calls that hand over findings are counted, without naming the tool), **FR-6.3a** (a rule no longer needs its own regression case), **FR-8.2b** (the tool-schema clause leaves it; FR-5.6a and §5 still require the property), **FR-8.2c** (whether the ceiling was reached replaces the investigation-tools flag and the completion status), **FR-8.2d** (the minimum breakdown is the total and the emitting count) and **AC-2** (it describes its own run and also verifies FR-4.2). **FR-8.5 (new)**, a Mermaid visual report, and **AC-17 (new)** move into scope. No requirement was renumbered. Nothing else from srs-v2 is adopted: the 37 requirements it places out of scope remain in force here, and FR-4.8, FR-10.3d and FR-10.3a's five selections, which srs-v2 predates, are unchanged. Revision entries 1.2 and 1.3 are added. |
+| **1.7** | **2026-10-27** | **One SRS.** The v1–v3 catalogue and srs-v2 are merged into this document and removed. The catalogue's business case, scope boundaries, v3 deferral table, glossary terms for later versions, planned non-functional items, roadmap, and the text of every requirement not defined in §4 move to **Appendix C**. srs-v2's high-level requirements (HLR-1…HLR-25) and its level-3 component diagram move to **§3.1**; its unadopted cut and the gaps it would open move to **Appendix D**. No requirement in §4 is changed, added, removed or renumbered; where the catalogue's older wording of an identifier differs from §4, §4's text governs, as it already did. |
 
 ---
 
@@ -96,7 +100,9 @@ flowchart LR
 - Design: [`design/`](./design/) — how the requirements below are put together. Subordinate to this document
 - Technology selection: [`technical_stack.md`](./technical_stack.md) — libraries, the resolver-sidecar protocol, repository layout, and the import contracts that enforce AC-10
 - Scope derivation: [`Draft/mvp-scope.md`](./Draft/mvp-scope.md)
-- Full catalogue: [`Draft/agentic-code-review-srs.md`](./Draft/agentic-code-review-srs.md)
+- Requirements for later versions and the product-wide business case: Appendix C of this document
+- High-level requirements and component diagrams: §3.1 of this document, and [`design/Component-design/README.md`](./design/Component-design/README.md) for the level-1 to level-3 drawings they were read from
+- Problem definition: [`Draft/Agentic_Code_Review_Problem_Definition_v1.md`](./Draft/Agentic_Code_Review_Problem_Definition_v1.md)
 - Non-functional requirements: deferred to a dedicated pass (§8)
 
 ---
@@ -193,6 +199,91 @@ The requirements in §4 are organised around nine function blocks. Each requirem
 | **CF-7** | Output | Terminal rendering, JSON artifact, HTML rendering, exit status |
 | **CF-8** | Pattern library and regression harness | Rules, rule attribution, and measurement |
 | **CF-9** | Configuration and diagnostics | Config, credentials, and legible failure |
+
+### 3.1 High-level requirements
+
+The high-level requirements (HLRs) state what the component diagrams on the [HLR page](./design/Component-design/README.md) ask for. They are read from those diagrams, not derived from §4, and each is met by the functional requirements named beside it. **An HLR adds no obligation of its own**: where an HLR and a functional requirement disagree, §4 governs. *(Moved here in v1.7 from srs-v2 §3, which reworded HLR-3 and HLR-9 and added HLR-24 and HLR-25. The "Met by" column is srs-v2's mapping; it names the principal requirements, not every one that touches the HLR.)*
+
+**Level 3 — the components**
+
+```mermaid
+flowchart TB
+    subgraph CG["Context Gatherer"]
+        direction TB
+        subgraph ST["Program static context"]
+            DIFF["Change diff"]
+            AST["AST parsers"]
+            REL["Related context<br/>(depth 0–1)"]
+            TC["Type-check"]
+            UT["Unit test cases"]
+        end
+        subgraph RT["Program runtime behaviour"]
+            IT["Integration / chaos testing<br/>(pre-written test cases)"]
+            OD["Other dynamic behaviour"]
+        end
+    end
+
+    RULES["User Provided Rules<br/>(5 built-in + the user's own)"]
+
+    subgraph RV["Reviewer"]
+        LLM["LLM call"]
+        RM["Rule matching"]
+    end
+
+    subgraph RP["Reporter"]
+        TXT["Text reporter"]
+        JSON["JSON reporter"]
+        GH["GitHub PR comments"]
+        VIS["Visual reporting<br/>(Mermaid)"]
+    end
+
+    CG <--> RULES
+    CG --> RV
+    RULES --> RV
+    LLM --> RP
+
+    style ST fill:#d5e8d4
+    style RT fill:#fff2cc
+    classDef decided fill:#008a00,color:#ffffff,stroke:#005700
+    classDef added fill:#1f6feb,color:#ffffff,stroke:#0b3d91
+    classDef out fill:#f2f2f2,color:#888888,stroke:#aaaaaa,stroke-dasharray: 5 5
+    class DIFF,AST,UT,IT decided
+    class REL,TC added
+    class OD,RM,GH out
+```
+
+Dark green marks a decided component; blue marks the two components added to the HLR page's drawing (related context, HLR-25, and type-check, HLR-24); grey and dashed marks a component no v1 requirement builds. The two-way arrow between context and rules stays in the drawing, but no requirement uses it (HLR-10 is withdrawn). There is no arrow from the reviewer back to context: the reviewer does not ask for more (HLR-15).
+
+| HLR | Requirement | In v1 | Met by |
+|---|---|---|---|
+| HLR-1 | The system shall gather context about a code change before reviewing it | Yes | All of CF-1 to CF-3 |
+| HLR-2 | Static context is gathered separately from runtime behaviour | Yes | The level-2 split above; no requirement of its own |
+| HLR-3 | Static context shall include the change diff | Yes | FR-10.3a, FR-10.3b, FR-10.3c, FR-3.5 |
+| HLR-4 | Static context shall include syntax trees of the affected code | Yes | FR-2.2, FR-2.4, FR-2.6b |
+| HLR-5 | Context shall include the results of the project's existing unit tests | Yes | FR-4.1, FR-4.4a, FR-4.4b, FR-4.5a–c, FR-4.7, FR-2.5c |
+| HLR-6 | Gather runtime behaviour by running the program | No | — |
+| HLR-7a | Context shall include the results of the project's pre-written integration tests | Yes | FR-4.1 and the execution requirements of HLR-5 |
+| HLR-7b | Context shall include the results of pre-written chaos tests | No | Not required. If the project's test script runs chaos tests, FR-4.1 runs them too |
+| HLR-8 | Open to other kinds of dynamic behaviour | No | — |
+| HLR-9 | The system shall accept review rules supplied by the user, and ship five built-in rules | Yes | FR-6.1, FR-6.3a |
+| HLR-10 | *(withdrawn on the HLR page)* | — | — |
+| HLR-11 | The review takes the rules as a direct input | Yes | FR-2.5a |
+| HLR-12 | The review uses both the gathered context and the rules | Yes | FR-5.3, FR-2.3c, FR-2.5, FR-2.5b, FR-6.2a |
+| HLR-13 | The review is produced by an LLM call | Yes | FR-0.3, FR-5.7, FR-5.10 |
+| HLR-14 | A rule-matching component separate from the LLM | No | The LLM applies the rules and names them (FR-6.2a) |
+| HLR-15 | The reviewer doesn't request further context | Yes, while investigation tools are off | FR-4.6. Enabling investigation tools (FR-5.7a–c) would let the model read more, which this HLR does not allow; that conflict is open and is decided by the measurement FR-5.7b requires |
+| HLR-16 | Reporting is a separate stage from the review | Yes | FR-10.2, FR-10.4a |
+| HLR-17 | A human-readable text report | Yes | FR-10.4a, FR-8.1b |
+| HLR-18 | A machine-readable JSON report | Yes | FR-8.2a–d, FR-8.4, FR-10.4b, FR-4.5c |
+| HLR-19 | Publish findings as GitHub PR comments | v3 | FR-7.1, FR-8.1a, FR-8.1c (Appendix C). Reading a public pull request's change set is in v1 (FR-10.3a, FR-10.3d) |
+| HLR-20 | A visual report as a Mermaid diagram | Yes | FR-8.5 |
+| HLR-21 | Several interchangeable report channels behind one stage | Yes | FR-10.2; the channels are text, JSON, HTML and Mermaid |
+| HLR-22 | A fixed forward pipeline: gather → review → report | Yes | FR-5.8 |
+| HLR-23 | Stages can be broken into parts without changing the arrows between stages | Yes | FR-5.8, FR-2.6e |
+| HLR-24 | Static context shall include the results of the project's type-check | Yes | FR-4.2 |
+| HLR-25 | Static context shall include related source around the change, gathered at a requested depth through one interface | Yes | FR-2.3d, FR-2.6a–g |
+
+HLR-3 previously said "the **Git diff** of the change", and HLR-9 "review rules **supplied by the user**". The change set must not depend on git (FR-10.3c), and the system ships rules of its own (FR-6.3a), so both were reworded. HLR-24 and HLR-25 add no work: FR-4.2 and FR-2.6a–g were already in §4, and the HLRs give them a box in the drawing.
 
 ---
 
@@ -509,7 +600,7 @@ v1 is complete when all of the following hold. Each is verifiable by execution, 
 
 ## 7. Excluded from v1
 
-Full reasoning for each is in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) §4.
+Full reasoning for each is in [`Draft/mvp-scope.md`](./Draft/mvp-scope.md) §4. The text of every requirement named below is in Appendix C.3.
 
 | Excluded | Requirements | Destination |
 |---|---|---|
@@ -697,3 +788,196 @@ Step 4.5 exists for the same reason and is the one step that may end in a revert
 | FR-10.2 | Cross-cutting | AC-10 |
 | FR-10.3a–d | CF-1 | AC-1 |
 | FR-11.1, FR-11.2, FR-11.3 | Cross-cutting | AC-7 |
+
+## Appendix C — Requirements for later versions
+
+Moved here in v1.7 from the v1–v3 requirement catalogue (`Draft/agentic-code-review-srs.md`, catalogued 2026-09-08), which this appendix replaces. **Not the build target.** It keeps the business case that motivates the whole roadmap and the text of every requirement held for a later version, so that their identifiers stay reserved and their cross-references in the ADRs stay valid. Where an identifier is also defined in §4, §4's text governs and the catalogue's older wording is not repeated here; it remains in the repository history (`git log -- Docs/Draft/agentic-code-review-srs.md`).
+
+### C.1 Business case
+
+**Problem.** AI-assisted development has sharply increased the volume and size of pull requests, outpacing the capacity of human reviewers and creating a review bottleneck. Existing automated tools address only fragments of the problem: linters catch syntax but miss semantics and cross-file dependencies; single-shot LLM reviewers give shallow line comments without executing code or understanding the wider repository, and — when the same model both writes and reviews — suffer from self-confirmation bias. There is no accessible, budget-conscious tool that performs a genuinely autonomous, context-aware, execution-backed first-pass review while keeping humans focused on the changes that actually carry risk. The full problem definition and personas are in [`Draft/Agentic_Code_Review_Problem_Definition_v1.md`](./Draft/Agentic_Code_Review_Problem_Definition_v1.md).
+
+**Objectives.**
+
+1. **Automate the first-pass review** so human attention is reserved for high-risk changes.
+2. **Ground reviews in real context and execution** — full-repository context, dependency-aware analysis, and sandboxed test, build and scan runs rather than text-only inference.
+3. **Eliminate self-confirmation bias** by running the review agent in a fresh context, isolated from any code-writing agent.
+4. **Triage by blast radius** — deterministically route changes so critical ones (security, core logic) get deeper review and trivial ones (docs, dependency bumps) can be fast-tracked.
+5. **Propose actionable fixes** as review comments, backed by execution evidence. Auto-applied remediation is later work.
+6. **Operate within a $20/free budget** by using a single free or low-cost provider (for example the NVIDIA NIM free tier), with model calls wrapped behind a thin interface so the provider can be swapped without rearchitecting.
+7. **Produce dual output** — human summaries and structured data for downstream automation.
+8. **Ship as a usable open-source project** — clear docs, easy adoption, and an extensible base others can build on.
+
+**Success criteria.** The system runs end to end on a public repository using only free tiers — through the CLI in v1, through the Action from v3. Reviews are grounded in executed test and build results, not text inference alone. Findings are emitted in the canonical finding model (FR-0) and serialised to schema-valid JSON. A new contributor can adopt the system from the shipped README and docs — the CLI in v1, and the example workflow from v3. Quantitative targets are deferred to the non-functional pass (§8, C.5).
+
+**Stakeholders.**
+
+| Stakeholder | Interest |
+|---|---|
+| Repository maintainers | Reduced review load; trustworthy first-pass triage |
+| Pull-request authors (human and AI-assisted) | Fast, actionable, execution-backed feedback |
+| Open-source contributors | A clear, extensible codebase and requirements |
+| Project maintainer | A shippable, budget-bound, maintainable v1 |
+
+**Product perspective across versions.** The system is self-contained, not a hosted service. In v1 it runs on a developer's own machine; from v3 it also runs inside the adopter's CI on GitHub-hosted runners. It holds no persistent server-side state — review history lives in local state files from v2 (FR-10.5), and additionally in pull-request comments and per-run artifacts from v3. A hosted GitHub App (webhooks, backend, database) is out of scope entirely.
+
+*Open-core business model (2026-10-03).* A business decision recorded in [`Draft/enterpenuership/003-business-model-canvas.md`](./Draft/enterpenuership/003-business-model-canvas.md) §5: the command-line tool and its engine stay free and open source, and revenue is planned from a **paid hosted review service**. That contradicts the paragraph above. **No requirement, identifier or version is added by it**: the hosted service has no specification, no version and no ADR. Taking it up is a design change, not an addition — it would be the first surface that operates a server and holds server-side state, which §2.1 and the reasoning of [ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md) ("The product is deliberately **not** a hosted service") rule out today.
+
+### C.2 Scope boundaries for later versions
+
+**Out of scope for every version catalogued:**
+
+- Automated or auto-applied remediation, and fix-and-verify loops (later work)
+- Languages other than TypeScript/JavaScript
+- A hosted GitHub App with webhooks and a persistent backend
+- A web dashboard or analytics UI
+- Non-GitHub platforms (GitLab, Bitbucket)
+- Multimodal or architectural-diagram analysis
+- Team governance, RBAC and audit-compliance features
+- Self-hosted sandbox infrastructure (gVisor, Firecracker)
+- Multi-provider routing, fallback chains and config-driven provider abstraction
+
+**Deferred to v3 — GitHub integration.** Everything requiring the GitHub API, the Actions runtime, or a pull request as the unit of review, except reading a public pull request's change set, which v1 does (FR-10.3a, FR-10.3d, [ADR-0011](./adr/0011-cli-reads-a-public-pull-request.md)). These requirements keep their identifiers and are tagged **(v3)** in C.3.
+
+| Requirement | What it covers | Why it is GitHub-dependent |
+|---|---|---|
+| FR-1.1 | Action triggered on pull request `opened` / `synchronize` | The Actions runtime and pull-request events |
+| FR-1.3 | Authentication through a repository or organisation secret | v1 reads the provider key from the local environment or user configuration instead (FR-1.3a) |
+| FR-1.4 | Skip through a label or config flag | Labels are a GitHub concept; the config flag survives in v1 under FR-1.2 |
+| FR-2.1 | Check out the pull-request branch and identify changed files | v1 resolves a local change set instead (FR-10.3a, FR-10.3b) |
+| FR-7.1 | Suggested-change blocks in review comments | A GitHub review-comment feature; v1 renders advisory findings to the terminal |
+| FR-8.1a–c | The single pull-request summary comment and its update-in-place behaviour | Pull-request comments |
+| FR-8.3 | Non-blocking status or check run | The GitHub checks API |
+| FR-9.1 *(partial)* | The example workflow file | The rest of FR-9.1 — README, LICENSE, usage docs — is v1 |
+| FR-9.2 | End-to-end run on a public repository using a GitHub-hosted runner | v1's equivalent is an end-to-end local run on free provider tiers (FR-9.2a) |
+
+Consequences for the decision records: [ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md) (untrusted-code isolation and fork triggers) and [ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md) (the hidden comment ledger) are **v3 decisions** with no v1 effect. [ADR-0006](./adr/0006-local-cli-core-action-as-adapter.md) increases in importance: the adapter seam is what lets the Action arrive in v3 as an addition rather than a rewrite. FR-10.2's "both surfaces produce the same findings" becomes testable only in v3, but the constraint it expresses binds from the first line of v1 code.
+
+**Operating environment of the Action surface (v3).** GitHub-hosted runners, Actions and the pull-request API, triggered on pull request `opened` and `synchronize`. Execution time and resources are bounded by runner limits, and the provider key comes from repository or organisation secrets, never a hard-coded key.
+
+### C.3 Requirements not yet scheduled
+
+Grouped as the catalogue grouped them. A **(v3)** tag replaces Must/Should for a requirement deferred with GitHub integration; the others are held for v2 (§7) and keep the Must/Should tag they were catalogued with, which applies once their version is specified.
+
+**FR-1 — Trigger and integration**
+
+- **FR-1.1 (v3)** The system shall run as a GitHub Action triggered on pull request `opened` and `synchronize` (new commits) events. *(v1 equivalent: FR-10.1, an explicitly invoked command.)*
+- **FR-1.3 (v3)** The system shall authenticate to the model provider using a repository or organisation secret, never a hard-coded key. *(v1 equivalent: FR-1.3a.)*
+- **FR-1.4 (v3)** The system shall allow the Action to be skipped through a label or config flag (for example `skip-agentic-review`). *(The config-flag half is available in v1 through FR-1.2; only the label mechanism is GitHub-dependent.)*
+
+**FR-2 — Context gathering**
+
+- **FR-2.1 (v3)** The system shall check out the pull-request branch and identify the changed files and diff hunks. *(v1 equivalent: FR-10.3a and FR-10.3b resolve a local change set into the same changed-files-and-hunks structure.)*
+- **FR-2.3a (Must, v2)** For each symbol modified in the diff, the system shall identify the files that import or export that symbol.
+- **FR-2.3b (Must, v2)** For each modified function or method, the system shall identify its direct call sites within the repository.
+
+**FR-3 — Risk triage (blast radius)**
+
+- **FR-3.1 (Must, v2)** The system shall deterministically classify each change into a risk tier (for example trivial / normal / critical) using file-path and change-type rules.
+- **FR-3.2 (Must, v2)** The triage rules shall be configurable (path globs → risk tier) so projects can mark security and core paths as critical.
+- **FR-3.3 (Must, v2)** The system shall route review depth by tier (fast-track trivial changes, deeper review for critical ones).
+- **FR-3.4 (Should, v2)** The system shall optionally select a lighter or stronger model by tier.
+
+**FR-4 — Execution**
+
+- **FR-4.3 (Should, v2)** The system shall run `npm audit` and capture its findings.
+
+**FR-5 — Review agent**
+
+- **FR-5.4 (Should, v2)** The agent shall distinguish blocking issues from non-blocking suggestions.
+- **FR-5.5 (Should, v2)** The agent shall avoid duplicate or near-duplicate comments on unchanged findings across re-runs.
+
+**FR-6 — Pattern library**
+
+- **FR-6.2c (Should, v2)** The system shall report pattern-library coverage (which rules fired) in the structured output.
+- **FR-6.3 (Should, v2)** The system shall ship a default TS/JS pattern set that projects can extend or override.
+
+**FR-7 — Fix suggestions (advisory only)**
+
+- **FR-7.1 (v3)** The system shall propose fixes as review comments, using GitHub suggested-change blocks where the fix is a localised edit.
+- **FR-7.1a (Should, v2)** The system shall include a proposed replacement snippet with a finding where the fix is a localised edit, rendered in the terminal and carried in the structured output.
+- **FR-7.3 (Should, v2)** Each suggestion shall link to the finding and evidence that motivated it.
+
+**FR-8 — Output**
+
+- **FR-8.1a (v3)** The system shall post exactly one summary comment per review run on the pull request. *(v1 equivalent: FR-10.4a, one terminal summary per invocation.)*
+- **FR-8.1c (v3)** On re-run, the system shall update its existing summary comment rather than post a new one.
+- **FR-8.3 (v3)** The system shall set a non-blocking status or check summarising the review outcome. *(v1 equivalent: FR-10.4c, a documented exit code.)*
+
+**FR-9 — Open-source usability**
+
+- **FR-9.2 (v3)** The system shall run against a public repository using only free tiers (a GitHub-hosted runner and a free model provider). *(v1 equivalent: FR-9.2a.)*
+
+**FR-10 — CLI surface**
+
+- **FR-10.5 (Should, v2)** The CLI shall persist per-change-set state locally so repeated invocations can suppress findings already reported, using the same fingerprint definition as the Action surface.
+- **FR-10.6 (Should, v2)** The system shall document the operating systems and Python versions the CLI supports — together with any minimum version of the optional Node.js runtime used by the resolver sidecar — and shall fail with a clear message on an unsupported combination.
+- **FR-10.7 (Should, v2)** The CLI shall tolerate a working tree that does not fully parse or type-check, and shall distinguish incomplete code from defective code in its findings.
+
+*The catalogued FR-8.1b also had the summary state the risk tier. §4's FR-8.1b does not, because risk triage is v2; whether the summary states the tier is decided when FR-3.1 is specified.*
+
+### C.4 Terms used by later versions
+
+| Term | Definition |
+|---|---|
+| **Agentic code review** | An automated review that gathers repository context, executes tools (tests, builds, scans) and reasons over the results — as opposed to static linting or single-shot LLM commenting |
+| **AST (abstract syntax tree)** | A structured tree representation of source code used to analyse symbols, dependencies and structure |
+| **Blast radius** | The potential impact scope of a change, used to assign a risk tier and route review depth (FR-3.1–FR-3.3) |
+| **Fresh-context review** | Running the review agent in a context isolated from any code-writing agent, to avoid self-confirmation bias (FR-5.1) |
+| **GitHub Action** | A CI workflow unit that runs in a repository's pipeline; the v3 surface, as opposed to a hosted GitHub App |
+| **Module resolution** | Turning an import specifier — `./auth` or `@app/db` — into the file on disk it refers to. The parser yields the specifier; resolving it needs the target language's own algorithm, which is why the resolver sidecar exists |
+| **Remediation engine** | The component responsible for fix proposals; limited to advisory suggestions (FR-7.2) |
+| **Risk tier** | A deterministic classification (for example trivial / normal / critical) that drives review depth and optional model selection |
+| **Suggested-change block** | A GitHub review-comment feature that proposes a specific localised edit the author can accept directly |
+| **Surface** | A way a user reaches the system. v1 has one, the local CLI; the GitHub Action is added in v3 |
+| **Tool sandbox** | The environment where tests, builds and scans run: the developer's machine in v1, a GitHub-hosted runner from v3. Always a subprocess running the project's own toolchain, never the host runtime (FR-4.7) |
+
+### C.5 Non-functional items planned beyond v1
+
+In addition to TBD-1 … TBD-8 (§8): execution isolation guarantees and the security model for untrusted pull-request code (a v3 concern); latency and cost targets per risk tier (once FR-3.1 exists); and quantitative targets for the success criteria of C.1.
+
+### C.6 Version roadmap
+
+| Version | Contents |
+|---|---|
+| **v1** | Specified in §1–§10. The local CLI: change-set resolution (including reading a public pull request), parsing and depth-0/1 related context, execution evidence, a single-pass review agent, the finding model, a five-rule pattern library with its regression harness, and terminal, JSON, HTML and Mermaid output |
+| **v2** | The requirements held back from v1 (§7, C.3) — context depths 2 and above behind the interface v1 establishes, risk triage, dependency audit, cross-run de-duplication, fix snippets, a broad rule set, and the platform support matrix |
+| **v3** | GitHub integration (C.2): the Action, pull-request comments, suggested-change blocks, status checks, untrusted-code isolation ([ADR-0003](./adr/0003-untrusted-code-isolation-and-fork-triggers.md)) and the cross-run comment ledger ([ADR-0005](./adr/0005-cross-run-memory-as-hidden-comment-ledger.md)) |
+| **Later** | Automated remediation and fix-and-verify loops · advanced scanning: secret detection, OWASP tooling, supply-chain and dependency-provenance analysis · languages other than TS/JS · multi-provider routing and fallback chains (the FR-0 finding model keeps this a data-mapping task, not a rearchitecture) |
+
+GitHub integration sits *after* the local product is complete. That is the intended sequence — build and measure the reviewing core where iteration is cheapest, then attach it to pull requests — but it means the primary problem statement in C.1 is not addressed until v3 (§9, R-5).
+
+## Appendix D — A narrower first phase, considered and not adopted
+
+Moved here in v1.7 from `agentic-code-review-srs-v2.md` (Draft 2.0, 2026-09-29, built from v1.4 of this document), which this appendix replaces. srs-v2 was a second attempt at the first implementable phase: it kept only the requirements that match a box or arrow in the component diagrams (§3.1), as classified in [`design/Component-design/srs-alignment.md`](./design/Component-design/srs-alignment.md). **Its five amendments, the amended AC-2, FR-8.5 and AC-17 were adopted in v1.6. Its cut was not**, and this appendix records it so the option is not lost.
+
+**Status of the cut: not adopted.** Adopting it would remove FR-5.6a and FR-11.2, two constraints `CLAUDE.md` calls load-bearing; that requires an ADR first. Until one exists, every requirement below stays in force in §4.
+
+**The 37 requirements the cut would place out of scope:**
+
+| Group | Requirements | In simple terms |
+|---|---|---|
+| Finding shape | FR-0.1, FR-0.2, FR-0.4, FR-5.2, FR-5.2a, FR-5.2b, FR-5.2c, FR-5.6, FR-5.7d | The fields a finding must have, the severity and category words, the schema version, and the link to the evidence behind it |
+| How findings leave the LLM | FR-5.6a, FR-5.6b, FR-5.6c, FR-5.9 | Findings only through a checked tool call, a fallback for providers without tools, one repair try, and the ok/error/denied reply format |
+| Investigation tools | FR-5.7a, FR-5.7b, FR-5.7c | Letting the model read more files during the review — the conflict with HLR-15 |
+| Reporting failures | FR-2.6h, FR-8.2e, FR-11.2 | Always producing a review and listing every problem that occurred |
+| Settings and diagnostics | FR-1.2a, FR-1.2b, FR-1.2c, FR-1.2d, FR-1.3a, FR-9.1, FR-9.3 | The settings file, its defaults, loud errors on a bad file, where the API key comes from, docs, and error messages |
+| Measurement | FR-6.2b, FR-6.2d, FR-6.2e, FR-6.2f | The regression command, catch rate and false positives |
+| Entry point and exit codes | FR-10.1, FR-10.4c, FR-9.2a | The CLI, exit codes, and "works end to end on a free tier" |
+| Budgets and trace | FR-11.1, FR-11.3 | A token and call budget per run, and a trace of the run |
+| Isolation and write path | FR-5.1, FR-7.2 | Keeping the reviewer apart from any code-writing agent, and "suggestions only, never commits" |
+
+srs-v2 counted 82 requirements in v1.4; FR-4.8 (new in v1.4), FR-10.3d and FR-10.4d (both later) appear in neither its kept nor its dropped list. It would also have dropped AC-1, AC-5, AC-6, AC-9, AC-11, AC-13, AC-14 and AC-15.
+
+**What the cut would leave open:**
+
+| # | Gap | What it means in practice | Caused by dropping |
+|---|---|---|---|
+| 1 | Findings have no fixed shape | No fixed fields, severity and category words or schema version, and a finding need not say what evidence backs it | FR-0.1, FR-0.2, FR-0.4, FR-5.2, FR-5.2a–c, FR-5.6 |
+| 2 | No rule on how findings leave the LLM | Nothing stops findings being read out of the model's free text; nothing checks a finding when it arrives, and a malformed one gets no second try. Load-bearing | FR-5.6a–c, FR-5.9 |
+| 3 | Failures don't have to be reported | A broken run could look like a clean one. Some protection remains: FR-4.4b, FR-4.5a, FR-2.6d, FR-2.6g, FR-5.10. Load-bearing | FR-11.2, FR-2.6h, FR-8.2e |
+| 4 | "Configurable" with no settings rules | Several requirements mention a setting, but nothing says where settings come from, that a bad file fails loudly, or that the key is never hard-coded or committed | FR-1.2a–d, FR-1.3a |
+| 5 | No required entry point or exit codes | A script cannot tell "found a blocker" from "couldn't run" | FR-10.1, FR-10.4c, FR-9.1, FR-9.3 |
+| 6 | No way to measure quality | No corpus and no catch rate; the ceiling default (TBD-8) could not be measured | FR-6.2b, FR-6.2d–f |
+| 7 | No isolation, budget or trace | The reviewer need not be kept apart from a code-writing agent; a run is not capped by tokens and cannot be explained afterwards | FR-5.1, FR-11.1, FR-11.3 |
+| 8 | Some kept requirements lose their acceptance criterion | AC-1 was the only check for FR-10.3a–c, FR-2.2, FR-2.3d, FR-2.4 and FR-3.5 | AC-1 |
