@@ -1,6 +1,6 @@
 """The review port: what the model is given, and what the review step returns (data-model §4–§5).
 
-The protocol lives here; its LangChain implementation lives in ``core/agent/`` (FR-5.8, FR-0.3).
+The protocol lives here; its LangChain implementation lives in ``agents/`` (FR-5.8, FR-0.3; ADR-0010).
 """
 
 from __future__ import annotations

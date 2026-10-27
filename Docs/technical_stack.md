@@ -237,7 +237,7 @@ The CF → module mapping is maintained in [`design/01-logical-architecture.md`]
 
 ### The structural contracts
 
-**Seven** import-linter contracts, cheap enough to run on every commit. *Revised 2026-09-14: SRS v1.1 extended AC-10 to cover FR-2.6e, and the design phase added two more that no criterion names but the layering needs.*
+**Eight** import-linter contracts are specified, cheap enough to run on every commit; **six** are enforced today, because contracts 4 and 5 arrive with the resolver and the context factory in feature 004 (`pyproject.toml`). *Revised 2026-09-14: SRS v1.1 extended AC-10 to cover FR-2.6e, and the design phase added two more that no criterion names but the layering needs.*
 
 | # | Contract | Enforces | Named by AC-10? |
 |---|---|---|---|
